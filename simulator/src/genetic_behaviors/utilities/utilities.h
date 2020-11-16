@@ -239,3 +239,21 @@ int quantize_inputs(float *observations, int size_vectors, int size_quantizer, c
  return(value);
 
 }
+
+// it writes the sensors' readings
+int write_obs_sensor(FILE *fpw,float *observations,int num_sensors, float start_angle,float range){
+ int j;
+
+//observations from raw to *float
+ fprintf(fpw,"( sensor laser %d %f %f",num_sensors,range,start_angle); 
+
+ for(j=0;j<num_sensors;j++){
+        fprintf(fpw," %f",observations[j]);
+        //printf("laser[%d] %f\n",j,observations.sensors[j]);
+ }
+
+ fprintf(fpw," )\n");
+ //printf("\n");
+
+ return(1);
+}

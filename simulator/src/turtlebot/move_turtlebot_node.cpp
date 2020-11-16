@@ -4,7 +4,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <nav_msgs/Odometry.h>
-#include "simulator/simulator_turtlebot.h"
+#include "simulator/simulator_MoveRealRobot.h"
 #include <math.h>
 
 geometry_msgs::Pose2D current_pose;
@@ -33,7 +33,7 @@ void odomCallback(const nav_msgs::OdometryConstPtr& msg)
 }
 
 
-bool move_turtle(simulator::simulator_turtlebot::Request &req, simulator::simulator_turtlebot::Response &res)
+bool move_turtle(simulator::simulator_MoveRealRobot::Request &req, simulator::simulator_MoveRealRobot::Response &res)
 {
     double dist = req.distance;
     double angle = req.theta;//M_PI;//1.5707;
@@ -148,8 +148,11 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "move_turtle_node");
     ros::NodeHandle n;
     ros::Subscriber sub_odometry = n.subscribe("odom", 1, odomCallback);
-    movement_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi",1); //for sensors the value after , should be higher to get a more accurate result (queued)
-    ros::ServiceServer service = n.advertiseService("simulator_move_turtle", move_turtle);
+    //movement_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi",1); //for sensors the value after , should be higher to get a more accurate result (queued)
+    movement_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel",1); //for sensors the value after , should be higher to get a more accurate result (queued)
+    
+
+    ros::ServiceServer service = n.advertiseService("simulator_move_RealRobot", move_turtle);
     ROS_INFO("start move_turtle_node ");
     ros::spin();
     return 0;

@@ -10,7 +10,7 @@
 *                                              *
 *                                              *
 ************************************************/
-#define CENTROID_FILE "vq_images_laser"
+#define CENTROID_FILE "data/vq_images_laser"
 #define NUM_BITS_INPUTS 8
 #define NUM_BITS_OUTPUTS 3 // bits to decode 8 outputs: STOP, BACKWARD, FORWARD, TURN_LEFT, TURN_RIGHT, etc
 #define NUM_BITS_INTENSITY 2
@@ -98,13 +98,22 @@ int main(int argc ,char **argv)
    int num_bits_vq = 3;
    int size_vq = pow(2,num_bits_vq);
    int q_intensity;
-   char genetic_path[200];
+   int q_inputs_gen;
+   int q_light_gen;
+   int flagRun=0;
+   char genetic_path[200]; //path of data used for genetic behaviors
    char pkg_path[100];
+   char file_obs[250]; //file of simulation steps to get individual fitness
+   FILE *fpw;
    strcpy(pkg_path,ros::package::getPath("simulator").c_str());
-   sprintf(genetic_path,"%s/src/genetic_behaviors/data/",pkg_path);
-   printf("genetics path: %s \n",genetic_path);
+   sprintf(genetic_path,"%s/src/genetic_behaviors/",pkg_path);
+    printf("genetics path: %s \n",genetic_path);
     // it sets the environment's path
     strcpy(path,"./src/simulator/src/data/");
+
+    FILE *test;
+    char file_test[200];
+
     while( ros::ok()  )
     {
         flagOnce = 1;
@@ -116,16 +125,16 @@ int main(int argc ,char **argv)
             // it gets sensory data
             ros::spinOnce();
 
-            if (!params.turtle)
+            if (!params.useRealRobot)
             {
                 get_light_values(&intensity,light_readings); // function in ~/catkin_ws/src/simulator/src/motion_planner/motion_planner_utilities.h
 
                 get_lidar_values(lidar_readings,params.robot_x,
-                                 params.robot_y,params.robot_theta,params.turtle); // function in ~/catkin_ws/src/simulator/src/motion_planner/motion_planner_utilities.h
+                                 params.robot_y,params.robot_theta,params.useRealRobot); // function in ~/catkin_ws/src/simulator/src/motion_planner/motion_planner_utilities.h
             }
             else
             {
-                get_light_values_turtle(&intensity,light_readings); // function in ~/catkin_ws/src/simulator/src/motion_planner/motion_planner_utilities.h
+                get_light_values_RealRobot(&intensity,light_readings); // function in ~/catkin_ws/src/simulator/src/motion_planner/motion_planner_utilities.h
                 for( i = 0; i < 512; i++)
                     lidar_readings[i] = lasers[i];
             }
@@ -141,6 +150,34 @@ int main(int argc ,char **argv)
 
             max_advance = params.robot_max_advance;
             max_turn_angle = params.robot_turn_angle;
+            //genetic behavior quantized variables
+            K_INTENSITY=2.52*max_advance;
+            q_intensity = quantize_intensity(intensity);
+            q_light_gen = quantize_destination(light_readings);
+            q_inputs_gen = quantize_inputs(lidar_readings, params.laser_num_sensors, size_vq, genetic_path);
+            //saves robot info
+            if(flagOnce==1){
+                sprintf(file_obs,"%sdata/output.raw",genetic_path);     //  cambiar por behavior_#ind.raw crear dentro del bucle con nombre distinto cada vez igual el fileclose
+                if((fpw=fopen(file_obs,"w")) == NULL){
+                    printf("File %s can not be open\n",file_obs);
+                    return(0);
+                }
+                sprintf(file_test,"%sdata/test.raw",genetic_path);
+                if((test=fopen(file_test,"w")) == NULL){
+                    printf("File %s can not be open\n",file_test);
+                    return(0);
+                }
+                // it opens the observation's sensor file
+                fprintf(fpw,"( radio_robot %f )\n",params.robot_radio);
+                fprintf(fpw,"( origen %f %f %f )\n",params.robot_x,params.robot_y,params.robot_theta);
+                fprintf(fpw,"( destination %f %f )\n",params.light_x,params.light_y);
+                flagRun=1;
+            }
+            fprintf(fpw,"( robot Justina %f %f %f )\n",params.robot_x,params.robot_y,params.robot_theta);
+            write_obs_sensor(fpw,lidar_readings,params.laser_num_sensors,params.laser_origin,params.laser_range);
+            fprintf(fpw,"( sensor destination %d )\n",q_light_gen);
+            fprintf(fpw,"( sensor light %d )\n",q_intensity);
+
 
             switch ( params.behavior)
             {
@@ -336,14 +373,9 @@ int main(int argc ,char **argv)
                est_sig = 0;
                flagOnce = 0;
             }
-            K_INTENSITY=2.52*max_advance;
-            q_intensity = quantize_intensity(intensity);
-            q_light = quantize_destination(light_readings);
-            //q_inputs=1;
-            q_inputs = quantize_inputs(lidar_readings, params.laser_num_sensors, size_vq, genetic_path);
             //printf("K_INTENSITY: %f,  q_intensity: %d",K_INTENSITY,q_intensity);
-            flg_result = state_machine_engine(q_inputs, q_light, q_intensity, &movements, &est_sig, max_advance, max_turn_angle,
-                     num_bits_vq, intensity);
+            flg_result = state_machine_engine(q_inputs_gen, q_light_gen, q_intensity, &movements, &est_sig, max_advance, max_turn_angle,
+                genetic_path, num_bits_vq, intensity);
 
             if(flg_result == 1) stop();
             break;
@@ -356,19 +388,19 @@ int main(int argc ,char **argv)
                est_sig = 0;
                flagOnce = 0;
             }
-            K_INTENSITY=2.52*max_advance;
-            q_intensity = quantize_intensity(intensity);
-            q_light = quantize_destination(light_readings);
-            //q_inputs=1;
-            q_inputs = quantize_inputs(lidar_readings, params.laser_num_sensors, size_vq, genetic_path);
             //printf("K_INTENSITY: %f,  q_intensity: %d",K_INTENSITY,q_intensity);
-            flg_result = state_machine_engine_stochastic(q_inputs, q_light, q_intensity, &movements, &est_sig, max_advance, max_turn_angle,
+            flg_result = state_machine_engine_stochastic(q_inputs_gen, q_light_gen, q_intensity, &movements, &est_sig, max_advance, max_turn_angle, genetic_path,
                      num_bits_vq, intensity);
 
             if(flg_result == 1) stop();
             break;
 
-
+            case 13:
+                write_obs_sensor(test,lidar_readings,params.laser_num_sensors,params.laser_origin,params.laser_range);
+                movements.twist=0.0;
+                movements.advance=0.0;
+                if(cta_steps>=10) stop();
+                break;
              default:
                     printf(" ******* SELECTION NO DEFINED *******\n");
                     movements.twist = 3.1416/4;
@@ -386,11 +418,20 @@ int main(int argc ,char **argv)
             flg_noise = params.noise;
 
             move_robot(movements.twist,movements.advance,lidar_readings);
+            // it saves the robot's actions
+            fprintf(fpw,"( movement %f %f )\n",movements.twist,movements.advance);
             ros::spinOnce();
             new_simulation = 0;
             r.sleep();
         }
         ros::spinOnce();
+        if(flagRun==1){
+            fprintf(fpw,"( distance %f )\n",sqrt((params.robot_x-params.light_x)*(params.robot_x-params.light_x)+(params.robot_y-params.light_y)*(params.robot_y-params.light_y)));
+            fprintf(fpw,"( num_steps %d )\n",cta_steps);
+            fclose(fpw);
+            flagRun=0;
+        }
         r.sleep();
     }
+    //fclose(fpw);
 }

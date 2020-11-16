@@ -23,6 +23,8 @@ import os
 import numpy as np
 import subprocess
 
+File_Results= rospkg.RosPack().get_path('simulator')+"/src/genetic_behaviors/data/output.raw"
+
  
 class MobileRobotSimulator(threading.Thread):
 	
@@ -100,7 +102,11 @@ class MobileRobotSimulator(threading.Thread):
 		self.posible_collision = [None] * 512;
 		self.sensors_value = [None] * 512 
 
+		#Genetics	
+		self.is_Genetic = False 
+
 		self.start()
+
 
 	def kill(self):  # When press (x) window
 		self.stopped = True
@@ -187,6 +193,20 @@ class MobileRobotSimulator(threading.Thread):
 			parameters.append( bool(self.varTurtleBot.get()) )
 		except ValueError:
 			if self.varTurtleBot.get()==1:
+				parameters.append( True )
+			else:
+				parameters.append( False )
+		try:
+			parameters.append( bool(self.varLidar.get()) )
+		except ValueError:
+			if self.varLidar.get()==1:
+				parameters.append( True )
+			else:
+				parameters.append( False )
+		try:
+			parameters.append( bool(self.varSArray.get()) )
+		except ValueError:
+			if self.varSArray.get()==1:
 				parameters.append( True )
 			else:
 				parameters.append( False )
@@ -507,12 +527,14 @@ class MobileRobotSimulator(threading.Thread):
 				self.w.delete(trace)
 			self.trace_route = []
 			
-		else: 
+		else:
+			#calculate fitness
+			self.calculateFitness(File_Results)
 			self.denable('normal')
 			self.startFlag=False
 			self.entrySteps.delete ( 0, END )
 			self.entrySteps.insert ( 0, str(self.steps_aux)  )
-       
+
 
 	def rewindF(self): # When  the "Last simulation" button is pressed
 		self.denable('disabled')
@@ -566,6 +588,149 @@ class MobileRobotSimulator(threading.Thread):
 
 	def object_interaction(self,  *args):
 		pass
+
+##################################################
+##################################################
+#
+# GENETICS
+#
+##################################################
+##################################################
+
+	def readResultFile(self,File_Results,num):
+
+	      advance_robot=float(self.entryAdvance.get())
+	      number_steps_total=self.steps_aux
+	      max_angle_robot=float(self.entryTurnAngle.get())
+	      num_steps=int(self.entrySteps.get())
+
+
+	      class Cnts:
+
+	        def __init__(self):
+
+				self.K0 = 1.0
+				self.K1 = 10.0 * self.K0 #0.1
+				self.K2 = 2.0 * self.K0 #10.0
+				self.K3 = 0.0 #0.0
+				self.K4 = 0.0 #0.1
+				self.K5 = 0.0 #0.1
+				self.K6 = 0.0 #1.0
+				self.K7 = 0.0 #.10
+				self.K8 = 11.0 * self.K0 #.10		
+	      Ct = Cnts()
+	      file_results = open(File_Results, 'r')
+
+	      num_backwards = 1
+	      num_advance = 1
+	      num_turns = 1
+	      num_stops = 1
+	      previous_angle = 0.0
+	      previous_advance = 0.0
+	      previous_x = 0.0
+	      previous_y = 0.0
+	      THRESHOLD_MOVEMENT = 0.001
+	      num_steps_total =int(self.entrySteps.get())
+
+	      threshold_noise = advance_robot/2
+	      threshold_angle = max_angle_robot/2
+	      #print "threshold noise ",str(threshold_noise)
+	      #print "threshold angle ",str(threshold_angle)
+	      #PATH = self.path.get()
+	      #print 'Evaluate Robot PATH ',PATH
+	      #File_Name = self.file.get()
+
+	      xx=[]
+	      yy=[]
+
+
+	      for line in file_results:
+	      	words = line.split()
+	      	data = words
+	      	if len(words) > 1:
+	      		if words[1] == "origen":
+	      			xo = float(words[2])
+	      			yo = float(words[3])
+	      			zo = float(words[4])
+	      		elif words[1] == "robot":
+	      			x= float(words[3])
+	      			xx.append(x)
+	      			y= float(words[4])
+	      			yy.append(y)
+	      			tetha= float(words[5])
+	      			difx = (x-previous_x)	
+	      			dify = (y-previous_y)
+	      			mag = math.sqrt(pow(difx,2)+pow(dify,2))	
+	      			if mag < THRESHOLD_MOVEMENT:
+	      				num_stops=num_stops + 1
+	      			previous_x=x
+	      			previous_y=y
+	      		elif words[1] == "destination":
+	      			xd= float(words[2])
+	      			yd= float(words[3])
+	      		elif words[1] == "distance":
+	      			distance= float(words[2])
+	      		elif words[1] == "num_steps":
+	      			num_steps= float(words[2])-1
+	      		elif words[1] == "movement":
+	      			angle= float(words[2])
+	      			advance= float(words[3])
+	      			if(advance < -threshold_noise):
+	      				num_backwards=num_backwards + 1
+	      			if(abs(angle) >= threshold_angle and abs(previous_angle) >= threshold_angle):
+	      				num_turns=num_turns + 1
+	      			if(advance >= threshold_noise and previous_advance >= threshold_noise):
+	      				num_advance=num_advance + 1
+
+	      			previous_angle = angle
+	      			previous_advance = advance		
+	      sdx = np.std(xx)
+	      sdy = np.std(yy)
+	      sd = sdy + sdx
+	      #print 'std ', str(sd)
+	      try:
+	      	a=xo
+	      except NameError:#evita que muera con robot real
+	      	xo=0
+	      	x=.5
+	      	yo=0
+	      	y=.5
+	      	xd=1
+	      	yd=1
+
+
+	          #print 'final position x ',x, ' y ',y,' angle ',tetha
+	      dif_o= math.sqrt( math.pow( (xo -x),2)+math.pow( (yo -y),2))
+	      dif_d= math.sqrt(math.pow( (xd -x),2)+math.pow( (yd -y),2))
+	      dif_o_d= math.sqrt(math.pow( (xd -xo),2)+math.pow( (yd -yo),2))
+	      num_steps=1
+
+	      #QUITE PARTE DIJKSTRA
+	      #command = "../Dijkstra/Dijkstra -x " + str(x) + " -y " + str(y) + " -v " + str(xd) + " -z " + str(yd) + " -p " + PATH + " -e " + File_Name + " > " + PATH + "rslt_" + BEHAVIOR + ".dat"
+	      #    status = os.system(command)
+	      #FILE = PATH + "rslt_" + BEHAVIOR + ".dat"
+	      #if(os.path.isfile(FILE)):
+	      #		file = open(FILE, 'r')
+	      #		dummy = file.readline()
+	      #    		distance_Dijkstra = float(file.readline())
+	      		#print 'dif_d ',str(dif_d), ' distance_Dijkstra ',str(distance_Dijkstra)
+	      #		file.close()
+	      #else:
+		#	distance_Dijkstra = 0
+	      #dif_d = dif_d + distance_Dijkstra
+
+	      evaluation = Ct.K1*abs((number_steps_total - num_steps + 1)*dif_o) + (Ct.K2*abs(number_steps_total - num_steps + 1))/dif_d + Ct.K3*abs(dif_o_d/num_steps) + Ct.K4*(number_steps_total - num_steps+1)/num_backwards + Ct.K8*sd
+	      print("total_steps: ",number_steps_total," num_steps: ",num_steps)
+	      file_results.close()
+
+	      return evaluation
+
+	def calculateFitness(self,File_Results):
+	    	if self.startFlag==True: #simulacion en proceso
+	    		partial_evaluation = self.readResultFile(File_Results,0)
+	    		#print 'Evaluation ',partial_evaluation
+	    		self.fitness.delete(0, END)
+	    		self.fitness.insert ( 0, str(partial_evaluation))
 
 
 ##################################################
@@ -707,10 +872,42 @@ class MobileRobotSimulator(threading.Thread):
 
 	def convert_from_m_to_pixel(self,m):
 		return m * self.canvasX / self.mapX
+	
+	def use_s_array(self):
+		if self.varSArray.get() :
+			self.varLidar.set(0)
+			self.entryNumSensors.delete ( 0, END )
+			self.entryNumSensors.insert ( 0, '8')
+		else:
+			self.varLidar.set(1)
+			self.entryNumSensors.delete ( 0, END )
+			self.entryNumSensors   .insert ( 0, '20')
+
+	def use_lidar(self):
+		if self.varLidar.get():
+			self.varSArray.set(0)
+			self.entryNumSensors.delete ( 0, END )
+			self.entryNumSensors   .insert ( 0, '20')
+		else:
+			self.varSArray.set(1)
+			self.entryNumSensors.delete ( 0, END )
+			self.entryNumSensors   .insert ( 0, '8')
+
 
 	def use_real_robot(self):
 
 		if self.varTurtleBot.get() :
+			if self.varSArray.get() :
+				self.varLidar.set(0)
+				self.entryNumSensors.delete ( 0, END )
+				self.entryNumSensors.insert ( 0, '8')
+			else:
+				self.varLidar.set(1)
+				self.entryNumSensors.delete ( 0, END )
+				self.entryNumSensors   .insert ( 0, '20')
+			self.checkLidar.configure(state="normal")
+			self.checkSArray.configure(state="normal")
+			
 			subprocess.Popen([self.rospack.get_path('simulator')+'/src/turtlebot/start_rviz_turtlebot.sh'])
 			self.w.delete(self.nodes_image)
 			state='disabled'
@@ -751,6 +948,10 @@ class MobileRobotSimulator(threading.Thread):
 			#self.plot_robot2()
 			
 		else: 
+			self.entryNumSensors.delete ( 0, END )
+			self.entryNumSensors   .insert ( 0, '20')
+			self.checkLidar.configure(state="disabled")
+			self.checkSArray.configure(state="disabled")
 			self.buttonMapLess.configure(state="disabled")
 			self.buttonMapMore.configure(state="disabled")
 			state='normal'
@@ -1554,8 +1755,29 @@ class MobileRobotSimulator(threading.Thread):
 
 		self.lableTurtleBot = Label(self.rightMenu, text = "Real robot" ,background = self.backgroundColor ,foreground = self.titlesColor ,font = self.headLineFont)
 		self.varTurtleBot   = IntVar()
-		self.checkTurtleBot = Checkbutton(self.rightMenu ,text = 'Use TurtleBot' ,variable = self.varTurtleBot ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_real_robot )
+		self.varLidar   = IntVar(value=1)
+		self.varSArray   = IntVar()
+		self.checkTurtleBot = Checkbutton(self.rightMenu ,text = 'Use real robot' ,variable = self.varTurtleBot ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_real_robot )
+		self.checkLidar = Checkbutton(self.rightMenu ,text = 'Use lidar' ,variable = self.varLidar ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_lidar )
+		self.checkSArray = Checkbutton(self.rightMenu ,text = 'Use sensors array' ,variable = self.varSArray ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_s_array )
 		
+		#Genetics
+		# Number of generations 
+		self.lableGenetics   = Label(self.rightMenu ,text = "Genetics" ,background = self.backgroundColor ,foreground = self.titlesColor ,font = self.headLineFont)
+  		self.label_generations = Label(self.rightMenu,text =  "Num. Generations", background = self.backgroundColor ,font = self.lineFont)
+  		self.label_individuals = Label(self.rightMenu,text =  "Num. Individuals", background = self.backgroundColor ,font = self.lineFont)
+  		self.label_fitness = Label(self.rightMenu,text =  "Fitness", background = self.backgroundColor ,font = self.lineFont)
+  		
+  		self.generations = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		self.individuals = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		self.fitness = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		
+  		self.buttonStartGenetics = Button(self.rightMenu , text = "Genetic Algorithm", foreground = self.buttonFontColor ,background = self.buttonColor,font = self.buttonFont,command = lambda: self.s_t_simulation(True) )
+
+  		self.generations.insert ( 0, '10' )
+  		self.individuals.insert ( 0, '10' )
+
+  		num_generations = self.generations.get()
 
 		#### Right menu widgets grid			
 
@@ -1623,9 +1845,11 @@ class MobileRobotSimulator(threading.Thread):
 
 		self.lableTurtleBot.grid(column = 0 ,row = 17 ,columnspan=2 ,sticky = (N, W) ,padx = 5)
 		self.checkTurtleBot.grid(column = 1 ,row = 18 ,columnspan=2 ,sticky = (N, W) ,padx = 5)
+		self.checkLidar.grid(column = 1 ,row = 19 ,columnspan=2 ,sticky = (N, W) ,padx = 5)
+		self.checkSArray.grid(column = 1 ,row = 20 ,columnspan=2 ,sticky = (N, W) ,padx = 5)
 
-		self.buttonMapLess.grid(column = 1 ,row = 19 ,columnspan=1 ,sticky = (N, W) ,padx = 5)
-		self.buttonMapMore.grid(column = 1 ,row = 19 ,columnspan=1 ,sticky = (N, E) ,padx = 5)
+		#self.buttonMapLess.grid(column = 1 ,row = 19 ,columnspan=1 ,sticky = (N, W) ,padx = 5)
+		#self.buttonMapMore.grid(column = 1 ,row = 19 ,columnspan=1 ,sticky = (N, E) ,padx = 5)
 
 		# buttons
 
@@ -1673,7 +1897,20 @@ class MobileRobotSimulator(threading.Thread):
 		self.buttonMapLess.configure(state="disabled")
 		self.buttonMapMore.configure(state="disabled")
 
+		self.checkLidar.configure(state="disabled")
+		self.checkSArray.configure(state="disabled")
 
+		# Genetics
+		self.lableGenetics      .grid(column = 0 ,row = 20  ,sticky = (N, W) ,padx = (5,5))      
+		self.label_generations      .grid(column = 0 ,row = 21  ,sticky = (N, W) ,padx = (5,5))     
+		self.label_individuals      .grid(column = 4 ,row = 21  ,sticky = (N, W) ,padx = (10,5))     
+		self.label_fitness     .grid(column = 4 ,row = 22  ,sticky = (N, W) ,padx = (10,5))     
+		
+		self.generations    .grid(column = 1 ,row = 21  ,sticky = (N, W) ,padx = (10,5))
+		self.individuals   .grid(column = 5 ,row = 21  ,sticky = (N, W) ,padx = 5)
+		self.fitness     .grid(column = 5 ,row = 22  ,sticky = (N, W) ,padx = 5 ) 
+
+		self.buttonStartGenetics.grid(column = 0 ,row = 22 ,rowspan = 2,columnspan = 2, sticky = (N, W+E) ,padx = (10,5))
 		
 	def run(self):	
 		self.gui_init()

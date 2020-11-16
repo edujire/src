@@ -81,7 +81,7 @@ message(CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS})
    simulator_algorithm_result.srv
    simulator_stop.srv
    simulator_set_light_position.srv
-   simulator_turtlebot.srv
+   simulator_MoveRealRobot.srv
    simulator_object_interaction.srv
    simulator_find_obj.srv
    simulator_manipulator.srv
@@ -240,6 +240,10 @@ add_dependencies(base_node simulator_generate_messages_cpp)
 add_executable(laser_node src/simulator_physics/laser_node.cpp)
 target_link_libraries(laser_node ${catkin_LIBRARIES})
 add_dependencies(laser_node simulator_generate_messages_cpp)
+
+add_executable(light_server src/simulator_physics/light_server.cpp)
+target_link_libraries(light_server ${catkin_LIBRARIES})
+add_dependencies(light_server simulator_generate_messages_cpp)
 
 add_executable(light_node src/simulator_physics/light_node.cpp)
 target_link_libraries(light_node ${catkin_LIBRARIES})

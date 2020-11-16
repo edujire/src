@@ -293,7 +293,7 @@ int  read_state_machine_stochastic(char *file,int *memory_state,int *num_in,pr_t
 
 /////modificar esta
 int state_machine_engine(int obs, int dest, int q_intensity, movement *movements, int *next_state,float Mag_Advance,float max_angle,
-                     int num_bits_vq, float intensity){
+                     char *path,int num_bits_vq, float intensity){
 
  //AdvanceAngle gen_vector;
  static int *mem_state,*mem_output;
@@ -315,7 +315,8 @@ int state_machine_engine(int obs, int dest, int q_intensity, movement *movements
  if(flg_read==1){
         mem_state= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
         mem_output= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
-    sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem.txt");
+    sprintf(state_machine_file_name,"%sstate_machines/state_machine_mem.txt",path);
+    //sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem.txt");
 
         size_mem=read_state_machine(state_machine_file_name,mem_state,&num_bits_output,&num_bits_input,mem_output);
 
@@ -355,7 +356,7 @@ else
 
 // State Machine engine 
 int state_machine_engine_stochastic(int obs, int dest, int q_intensity,movement *movements, int *next_state,float Mag_Advance,float max_angle,
-                                    int num_bits_vq, float intensity){
+                                    char *path, int num_bits_vq, float intensity){
 
  //AdvanceAngle gen_vector;
  static int *mem_state,*mem_output;
@@ -386,8 +387,8 @@ int state_machine_engine_stochastic(int obs, int dest, int q_intensity,movement 
     }
 
 
-        //sprintf(state_machine_file_name,"%sstate_machine_mem_stochastic.txt",path);
-        sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem_stochastic.txt");
+        sprintf(state_machine_file_name,"%sstate_machines/state_machine_mem_stochastic.txt",path);
+        //sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem_stochastic.txt");
         size_mem=read_state_machine_stochastic(state_machine_file_name,mem_state,&num_bits_input,&pr_output);
 
         flg_read=0;

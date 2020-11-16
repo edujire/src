@@ -11,7 +11,7 @@
 #include "simulator/simulator_laser.h"
 #include "simulator/simulator_light.h"
 #include "simulator/simulator_algorithm_result.h"
-#include "simulator/simulator_turtlebot.h"
+#include "simulator/simulator_MoveRealRobot.h"
 #include "simulator/simulator_object_interaction.h"
 #include <string.h>
 
@@ -97,7 +97,9 @@ void parametersCallback(const simulator::Parameters::ConstPtr& paramss)
     params.light_y             = paramss->light_y;
     params.behavior            = paramss->behavior;
     params.steps               = paramss->steps;
-    params.turtle              = paramss->turtle;
+    params.useRealRobot        = paramss->useRealRobot;
+    params.useLidar            = paramss->useLidar;
+    params.useSArray           = paramss->useSArray;
 
 }
 
@@ -203,13 +205,13 @@ int get_light_values(float *intensity, float *values)
     }
 }
 
-int get_light_values_turtle(float *intensity, float *values)
+int get_light_values_RealRobot(float *intensity, float *values)
 {
     int sensor;
     ros::NodeHandle n;
     ros::ServiceClient client;
     simulator::simulator_light srv;
-    client = n.serviceClient<simulator::simulator_light>("simulator_light_turtle"); //create the client
+    client = n.serviceClient<simulator::simulator_light>("simulator_light_RealRobot"); //create the client
     srv.request.req = 1;
 
     if ( client.call(srv) )
@@ -228,7 +230,7 @@ int get_light_values_turtle(float *intensity, float *values)
     }
     else
     {
-        ROS_ERROR("Failed to call service  simulator_light_turtle");
+        ROS_ERROR("Failed to call service  simulator_light_RealRobot");
     }
 }
 
@@ -365,28 +367,39 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
     int range_laser;
     int num_sensors;
 
-    num_points = 512;
-    PI = 3.1415926535;
-    range_laser = 360;//240;
-    complete_range = range_laser * PI / 180;
-    K1 = complete_range / num_points;
-    num_sensors = params.laser_num_sensors;
-    ranges = params.laser_range;
-    init_angle = params.laser_origin;
-    inc_angle = ranges / num_sensors;
-    theta = init_angle;
-
-    for(int j = 0, k = 1 ; j < num_sensors; j++, k++)
+    if(params.useLidar)
     {
-        index = int ( ( theta * 256 ) / 1.5707 ) + 256;
-        lasers[j] = float( msg->ranges[index] );
-        theta = k * inc_angle + init_angle;
+        num_points = 512;
+        PI = 3.1415926535;
+        range_laser = 360;//240;
+        complete_range = range_laser * PI / 180;
+        K1 = complete_range / num_points;
+        num_sensors = params.laser_num_sensors;
+        ranges = params.laser_range;
+        init_angle = params.laser_origin;
+        inc_angle = ranges / num_sensors;
+        theta = init_angle;
+
+        for(int j = 0, k = 1 ; j < num_sensors; j++, k++)
+        {
+            index = int ( ( theta * 256 ) / 1.5707 ) + 256;
+            lasers[j] = float( msg->ranges[index] );
+            theta = k * inc_angle + init_angle;
+        }
+    }else
+    {
+        for(int j = 0 ; j < params.laser_num_sensors ; j++)
+        {
+            lasers[j] = float( msg->ranges[j] );
+        }
     }
+    
+
 
 }
 
 
-int get_lidar_values(float *lasers, float robot_x ,float robot_y, float robot_theta, bool turtle)
+int get_lidar_values(float *lasers, float robot_x ,float robot_y, float robot_theta, bool useRealRobot)
 {
     ros::NodeHandle n;
     ros::ServiceClient client;
@@ -443,25 +456,25 @@ int move_gui(float angle ,float distance ,next_position *next,float lidar_readin
 }
 
 
-int move_turtle(float theta,float distance)
+int move_RealRobot(float theta,float distance)
 {
     ros::NodeHandle n;
     ros::ServiceClient client;
-    simulator::simulator_turtlebot srv;
-    client = n.serviceClient<simulator::simulator_turtlebot>("simulator_move_turtle");
+    simulator::simulator_MoveRealRobot srv;
+    client = n.serviceClient<simulator::simulator_MoveRealRobot>("simulator_move_RealRobot");
     srv.request.theta = theta;
     srv.request.distance = distance;
 
     if (client.call(srv))
     {
         if(srv.response.done)
-            printf("Turtlebot move done \n");
+            printf("Robot move done \n");
         else
-            printf("Turtlebot move fail \n");
+            printf("Robot move fail \n");
     }
     else
     {
-        ROS_ERROR("Failed to call service simulator_move_turtle");
+        ROS_ERROR("Failed to call service simulator_move_RealRobot");
 
     }
 
@@ -508,8 +521,8 @@ int move_robot(float theta,float advance,float lidar_readings[512] )
     check_collision(theta ,advance ,new_simulation,&final_theta,&final_distance);
 
     move_gui(final_theta ,final_distance ,&next,lidar_readings);
-    if(params.turtle)
-        move_turtle(theta,advance);
+    if(params.useRealRobot)
+        move_RealRobot(theta,advance);
     ros::spinOnce();
     return 1;
 }
