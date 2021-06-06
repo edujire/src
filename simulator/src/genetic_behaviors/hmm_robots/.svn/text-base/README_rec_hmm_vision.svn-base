@@ -1,0 +1,32 @@
+./rec_hmm_vision -f vision_objects_rgb -s images_training_elefante_rgb_36 -m 64 -p /home/savage/obs_vision/r16/ -q all -n 4
+recognize_vision -f vision_objects_rgb -s images_training_elefante_rgb_36 -m 64 -p /home/savage/obs_vision/r16/ -q all -n 4
+Objects FILE: /home/savage/obs_vision/r16/vision_objects_rgb.txt
+objects elefante_rgb
+objects robot_rgb
+objects nxt_rgb
+objects green_rgb
+objects hub_rgb
+/home/savage/obs_vision/r16/images_training_elefante_rgb_36.raw num. vectors 1160 size vectors 3
+object elefante_rgb Viterbi probability 4.254346e-148
+object robot_rgb Viterbi probability 1.376706e-222
+object nxt_rgb Viterbi probability 8.650835e-272
+object green_rgb Viterbi probability 2.328447e-220
+object hub_rgb Viterbi probability 1.765687e-237
+object elefante_rgb probability 3.102673e-147
+object elefante_rgb Viterbi probability 4.254346e-148
+object robot_rgb probability 5.032529e-220
+object robot_rgb Viterbi probability 1.376706e-222
+object nxt_rgb probability 1.354641e-268
+object nxt_rgb Viterbi probability 8.650835e-272
+object green_rgb probability 1.620611e-219
+object green_rgb Viterbi probability 2.328447e-220
+object hub_rgb probability 1.106567e-234
+object hub_rgb Viterbi probability 1.765687e-237
+
+
+ ****** Winner object elefante_rgb 3.102673e-147 ***** 
+
+
+ ****** Winner Vitterbi object elefante_rgb 4.254346e-148 ***** 
+
+

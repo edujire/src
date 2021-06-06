@@ -1,0 +1,15 @@
+Usage:
+get_hmm_vision -f environment -r -s -h -p path -v size vq
+
+-f specifies the object whose hmm will be created
+-r creates the hmm using retrained data
+-s shows the average probabilities after each iteration
+-n number of states
+-p path
+-v size vq
+-q name vector quantizer
+-h shows this message
+
+example:
+
+./get_hmm_vision -f floor -n 9 -s -p /home/savage/observations/cmucam/training_hsi/ -v 64 -q all

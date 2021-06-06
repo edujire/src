@@ -16,8 +16,8 @@
 #define NUM_BITS_INTENSITY 2
 #define NUM_BITS_DEST_ANGLE 3
 #define NUM_MAX_MEMORY 65535 // 2 >> 16
-#define THRESHOLD 30
-#define DEBUG 10
+#define THRESHOLD 23
+//#define DEBUG 10
     
 typedef struct _memory_state_machine{
         int state;
@@ -291,14 +291,15 @@ int  read_state_machine_stochastic(char *file,int *memory_state,int *num_in,pr_t
 
 }
 
-/////modificar esta
+
 int state_machine_engine(int obs, int dest, int q_intensity, movement *movements, int *next_state,float Mag_Advance,float max_angle,
-                     char *path,int num_bits_vq, float intensity){
+                     char *path,int num_bits_vq, float intensity, int flg_genetics, int ind, char *file_behavior){
 
  //AdvanceAngle gen_vector;
  static int *mem_state,*mem_output;
  static int flg_read=1;
  static int num_bits_input=NUM_BITS_INPUTS,num_bits_output=NUM_BITS_OUTPUTS;
+ static int actual_ind=-1;
  int size_mem;
  int index;
  int out;
@@ -310,18 +311,24 @@ int state_machine_engine(int obs, int dest, int q_intensity, movement *movements
  int result = 0;
  int state = *next_state;
  
-
-
- if(flg_read==1){
+ //printf("flag read: %i, ind: %i ind_actul = %i,flg_genetics %i \n",flg_read,ind,actual_ind,flg_genetics);
+ if(flg_genetics==1){
+	if(ind != actual_ind){//nuevo individuo
+		actual_ind=ind;
+		sprintf(state_machine_file_name,"%sdata/avoid_fsm_%i.dat",path,actual_ind);
+		mem_state= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
+        	mem_output= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
+		size_mem=read_state_machine(state_machine_file_name,mem_state,&num_bits_output,&num_bits_input,mem_output);
+ 	}		
+}
+ else if(flg_read==1){
         mem_state= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
         mem_output= (int *) malloc((unsigned) NUM_MAX_MEMORY*sizeof(int));
-    sprintf(state_machine_file_name,"%sstate_machines/state_machine_mem.txt",path);
-    //sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem.txt");
-
+    	sprintf(state_machine_file_name,"%sdata/%s",path,file_behavior);
+    	//sprintf(state_machine_file_name,"/media/alejandro/archivos/MobileRobotSimulator/catkin_ws/src/simulator/src/genetic_behaviors/state_machines/state_machine_mem.txt");
         size_mem=read_state_machine(state_machine_file_name,mem_state,&num_bits_output,&num_bits_input,mem_output);
-
-    flg_read=0;
- }
+    	flg_read=0;
+}
 
 #ifdef DEBUG
  printf("quantized intensity %d laser %d angle_dest %d\n",q_intensity,obs,dest);
@@ -425,7 +432,7 @@ else
  // /home/biorobotica/robotics/utilities/utilities.h //
  *movements=generate_output_genetics(out,Mag_Advance,max_angle);
 
-
+return result;
 }
 
 

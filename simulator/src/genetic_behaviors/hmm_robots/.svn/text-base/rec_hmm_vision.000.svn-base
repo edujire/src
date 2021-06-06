@@ -1,0 +1,505 @@
+/********************************************************
+*	rec_hmm_vision.c				*
+*	make -f make_rec_hmm_vision			*
+*							*
+*							*
+*		University of Mexico  U.N.A.M.		*
+*			Jesus Savage			*
+*							*
+*				2/24/1998		*
+*				4/22/2008		*
+*********************************************************
+*/
+
+#include <stdio.h>
+#include <math.h>
+#include "basics.h"
+#include "fractal.h"
+#include "plot.h"
+#include "audio.h"
+
+
+
+Widget     toplevel, canvas;
+image_data data;
+
+
+main(argc, argv)
+ int   argc;
+ char *argv[];
+{
+ int *warp,num_frames,i,j,k,num_files,flag,number;
+ int num_obs,winner,num_vectors,num_total_vectors;
+ float **ceps_vectors,**d_ceps_vectors,**power_vectors;
+ double *w;
+ float *window_ceps,**power_vq,**ceps_vq,**del_ceps_vq;
+ float **delta_ceps,*power,*delta_power,**cepstrals;
+ int *codec_data,*codec_data2,*indexes;
+ char *process_file,vq_file[CHAR_SIZE];
+ char unit2[CHAR_SIZE],unit3[CHAR_SIZE],file_obs[CHAR_SIZE];
+ FILE *fopen(),*fp2,*fp3;
+ char word[CHAR_SIZE],word1[CHAR_SIZE],word2[CHAR_SIZE];
+ char testing_files[CHAR_SIZE];
+ char rec_file[CHAR_SIZE],file_name[CHAR_SIZE];
+ int num_words,*key_words_per_file,*size_states;
+ char **rec_words;
+ float ***ais_words,**pis_words,***bis_ceps_words,***bis_del_words;
+ float ***bis_pow_words,****bis_words,**lpc_vq;
+ float ****b;
+ char **types;
+ double *prob_words;
+ char *ask_receive();
+ int ptr,**observations,num_mult;
+ float **lpcs,**autocorrelations;
+ char answer[CHAR_SIZE],line[CHAR_SIZE],number1[CHAR_SIZE];
+ int *expand_data,size_raw,plot,show;
+ char ch,*get_enter(),*path_speech(),test[CHAR_SIZE];
+
+
+ /*It gets the word whose vq will be tested */
+ show=get_inputs(argc, argv,word,test);
+ strcpy(word1,word);
+
+
+ /* It opens the plot display */
+ plot=check_plot(argc, argv);
+
+ 
+/* It gets the file that contains the testing files to use */
+ strcpy(testing_files,"obs_files.dat");
+ strcpy(unit2,path_speech());
+ strcat(unit2,testing_files);
+
+/* It gets the file that contains the recognition words to use */
+ strcpy(rec_file,test);
+ strcpy(unit3,path_speech());
+ strcat(unit3,rec_file);
+ 
+ /* it gets the number of geatures to use */
+/* printf("\n Number of features -> ");
+ getline(number1,CHAR_SIZE);
+ sprintf(line,"%s",number1);
+ sscanf(line,"%d",&num_mult);*/
+ num_mult=1;
+
+/* it opens the testing and recogniton files */
+ fp2=fopen(unit2,"r");
+ if(fp2==0){
+             printf("\n Can not open %s ",unit2);
+             exit(0);
+ }
+
+ fp3=fopen(unit3,"r");
+ if(fp3==0){
+             printf("\n Can not open %s ",unit3);
+             exit(0);
+ }
+
+
+
+/* It allocate the matrix and vectors used */
+
+ allocate_mem_var();
+
+ if((codec_data =(int *)
+                alloc_vector_int(MAX_SIZE_SAMPLES)) == 0){
+        printf("\n Memory allocation error collect_speech() ");
+        exit();
+ }
+
+ if((codec_data2 =(int *) 
+		alloc_vector_int(MAX_SIZE_SAMPLES)) == 0){
+        printf("\n Memory allocation error collect_speech() ");
+        exit();
+ }
+
+ if((types =( char **) alloc_matrix_char(SIZE_TYPES+1,CHAR_SIZE)) == 0){
+        printf("\n Memory allocation error collect_speech() ");
+        exit();
+ }
+
+ if( (window_ceps = (float *) alloc_vector(CEPSTRAL_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if( (w = (double *) alloc_vector_double(WINDOW_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((expand_data =(int *)
+                alloc_vector_int(MAX_SIZE_SAMPLES)) == 0){
+        printf("\n Memory allocation error ");
+        exit(0);
+ }
+
+
+ if((cepstrals =(float **)alloc_matrix(NUM_MAX_OBS,CEPSTRAL_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((ceps_vq =(float **)alloc_matrix(VQ_SIZE+1,CEPSTRAL_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((delta_ceps =(float **)alloc_matrix(NUM_MAX_OBS,CEPSTRAL_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((del_ceps_vq =(float **)alloc_matrix(VQ_SIZE+1,CEPSTRAL_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if( (power = (float *) alloc_vector(NUM_MAX_OBS)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+if((lpc_vq =(float **)alloc_matrix(VQ_SIZE+1,ORDER+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit(0);
+ }
+
+
+ if( (delta_power = (float *) alloc_vector(NUM_MAX_OBS)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((power_vectors =(float **)alloc_matrix(NUM_MAX_OBS,POWER_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+    
+ if((power_vq =(float **)alloc_matrix(VQ_SIZE+1,POWER_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+    
+
+ if((indexes =(int *)alloc_vector_int(NUM_MAX_OBS)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+  
+ if((observations =(int **)alloc_matrix_int(SIZE_TYPES+1,NUM_MAX_OBS)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+   
+
+ if((process_file =( char *) alloc_vector_char(CHAR_SIZE)) == 0){
+        printf("\n Memory allocation error collect_speech() ");
+        exit();
+ }
+
+
+ if((lpcs =(float **)alloc_matrix(NUM_MAX_OBS,ORDER+2)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+
+ if((autocorrelations =(float **)alloc_matrix(NUM_MAX_OBS,ORDER+2)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ if((expand_data =(int *)
+                alloc_vector_int(MAX_SIZE_SAMPLES)) == 0){
+        printf("\n Memory allocation error ");
+        exit();
+ }
+
+
+
+ /* It gets the size of the recognition vocabulary */
+ num_words=get_size_vocabulary(fp3);
+ fclose(fp3);
+ /*printf("\n Num_words %d",num_words);*/
+
+
+ if((rec_words =( char **) alloc_matrix_char(num_words+1,CHAR_SIZE)) == 0){
+        printf("\n Memory allocation error collect_speech() ");
+        exit();
+ }
+
+ /* It reads the recognition vocabulary */
+ read_rec_words(rec_file,rec_words);
+
+
+ /* It allocates the matrices used for the hmm evaluation */
+
+
+ if((key_words_per_file =(int *)alloc_vector_int(num_words+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+  
+ if((size_states =(int *)alloc_vector_int(num_words+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+  
+ /* It gets the number of states and how many words represents each hmm */
+ get_num_states(rec_words,num_words,key_words_per_file,size_states);
+
+  ais_words = (float ***)  malloc( (unsigned) (num_words+1)*sizeof(float *));
+  bis_words = (float ****) malloc( (unsigned) (num_words+1)*sizeof(float *));
+  pis_words = (float **)   malloc( (unsigned) (num_words+1)*sizeof(float *));
+    
+
+ for(j=1;j<=num_words;j++){
+ 
+  /*printf("\n %d size_states %d\n",j,size_states[j]);*/
+
+  if((ais_words[j] =(float **)alloc_matrix(size_states[j]+1,
+					size_states[j]+1 )) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+  }
+    
+
+  if((bis_words[j] =(float ***)alloc_hipper_matrix(SIZE_TYPES+1,
+		size_states[j]+1,VQ_SIZE+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+  }
+
+  if((pis_words[j] =(float *)alloc_vector(size_states[j]+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+  }
+
+ }
+    
+
+
+ if( (prob_words = (double *) alloc_vector_double(num_words+1)) == 0){
+         printf("\n Memory allocation error ");
+         exit();
+ }
+
+ 
+ /* The features vectors are selected */
+ strcpy(types[1],".lpc");
+ /*strcpy(types[2],".lpc_del");
+ strcpy(types[3],".lpc_pow");*/
+
+
+ /* It reads the hmm of each of the words */
+ read_hmms_mult(rec_words,num_words,ais_words,bis_words,pis_words,
+	num_mult,types,size_states);
+
+
+ /* It creates the hamming window */
+ create_hamming(w,WINDOW_SIZE);
+
+ /* It creates the cepstral weighting window */
+ create_window_cepstral(window_ceps);
+
+
+ /* It reads the power vq /
+ read_vq(power_vq,VQ_SIZE,POWER_SIZE,"lpc_power.vq");
+
+ / It reads the cepstral vq /
+ read_vq(ceps_vq,VQ_SIZE,CEPSTRAL_SIZE,"lpc_ceps.vq");
+
+ / It reads the power vq /
+ read_vq(del_ceps_vq,VQ_SIZE,CEPSTRAL_SIZE,"lpc_del_ceps.vq");*/
+
+ /* It reads the lpc vq */
+ read_vq(lpc_vq,VQ_SIZE,ORDER+1,"lpc_vq.ar1");
+
+
+
+ flag=1;
+ num_files=1;
+ num_vectors=0;
+ k=0;
+ 
+ strcpy(word2,"_");
+ strcat(word2,word);
+ strcat(word2,"_");
+
+ 
+/* It finds the features vectores of the sampling files*/
+ while(flag){
+
+    if(fscanf(fp2,"%s%d",file_name,&number)==EOF){
+                        fclose(fp2);
+                        flag=0;
+    }
+    else{
+     /*printf("\n %sn",file_name);*/
+
+     /* it checks for a file with the same word root */
+     if(strstr(file_name,word2)!=NULL){
+        printf("\n %d.- %s",num_files,file_name);
+
+      /* It checks if the observation files exists if not create them */
+      if((num_obs=check_file(file_name))==0){
+
+        strcpy(process_file,file_name);
+
+        /* It gets the cepstral, delta cepstral coefficients, power and
+           delta_power */
+        process_speech_lpc(w,window_ceps,process_file,cepstrals,delta_ceps,
+                power,delta_power,&num_frames,codec_data,codec_data2,lpcs,
+                autocorrelations,expand_data,plot);
+
+
+	printf("\n Creating the obs files of %s, num_frames %d",
+		process_file,num_frames);
+
+ 	/*for(i=1;i<=num_frames;i++){
+		power_vectors[i][1]=power[i];
+		power_vectors[i][2]=delta_power[i];
+	     /printf("\n power %f delta_power %f", power[i],delta_power[i]);/
+		/for(j=1;j<=CEPSTRAL_SIZE;j++){
+			printf("\n cepstral[%d][%d] %f delta_ceps %f",
+			i,j,cepstrals[i][j],delta_ceps[i][j]);
+		}/
+ 	}
+
+
+        /*It quantizes and stores the power and delta power in a single vector*/
+       /*quantize_vectors(power_vectors,indexes,num_frames,power_vq,POWER_SIZE);
+        save_power_lpc(file_name,indexes,num_frames);
+        cp_index(observations[3],indexes,num_frames);*/
+
+        /* It quantizes and stores the cepstral coefficients */
+        /*quantize_vectors(cepstrals,indexes,num_frames,ceps_vq,CEPSTRAL_SIZE);
+        save_cepstral_lpc(file_name,indexes,num_frames);
+        cp_index(observations[1],indexes,num_frames);*/
+
+
+        /* It quantizes and stores the delta cepstral coefficients */
+        /*quantize_vectors(delta_ceps,indexes,num_frames,
+                                        del_ceps_vq,CEPSTRAL_SIZE);
+        save_delta_ceps_lpc(file_name,indexes,num_frames);
+        cp_index(observations[2],indexes,num_frames);*/
+
+        /*for(i=1;i<=num_frames;i++){
+                printf("\n o[1][%d] %d o[2][%d] %d 0[3][%d] %d",
+                        i,observations[1][i],i,observations[2][i],
+                        i,observations[3][i]);
+        }*/
+
+ 	/* It quantizes and stores the delta cepstral coefficients */
+        quantize_vectors_lpc(autocorrelations,indexes,num_frames,
+							lpc_vq,ORDER+1);
+	save_lpc(file_name,indexes,num_frames);
+	cp_index(observations[1],indexes,num_frames);
+
+
+	num_obs=num_frames;
+	num_files++;
+
+       }
+
+
+       /* The observation files already exists, just read them */
+       else
+       {
+		/* It gets first the size of the file */
+		/*num_obs=get_size_file(file_name);*/
+
+		for(j=1;j<=num_mult;j++){
+			/* It reads the observations */
+	 		read_obs(file_name,types[j],num_obs,observations[j]+1);
+		}
+
+		num_files++;
+       }
+
+        if(plot==1){
+                /* it gets the raw data to plot /
+                get_codec_raw_data(file_name,codec_data,&size_raw);
+                /for(j=1;j<size_raw;j++){
+                        printf("\n samples[%d] %x",j,codec_data[j]);
+                }
+                printf("\n size_raw %d\n",size_raw);/
+
+                / It plots the raw data /
+                plot_raw(codec_data,expand_data,SEE_BLUE,size_raw);*/
+
+           strcpy(process_file,file_name);
+    	    process_speech_lpc(w,window_ceps,process_file,cepstrals,
+                delta_ceps,power,delta_power,&num_frames,codec_data,codec_data2,
+                lpcs,autocorrelations,expand_data,plot);
+
+
+
+	}
+
+
+       /* It calculates the probabilities of each of the hmms */ 
+       evaluate_hmms_mult(rec_words,num_words,num_obs-OFF,ais_words,bis_words,
+	pis_words,observations, prob_words,&winner,num_mult,size_states,show);
+
+	printf("\n Recognized word '%s'",rec_words[winner]);
+	if(show){
+		printf("\n Type something -> ");
+		ch=getchar();
+	}
+
+      } 
+
+     }
+ 
+ }
+
+ printf("\n");
+
+
+}
+
+
+
+int get_inputs(int argc, char **argv, char *word,char *test)
+{
+ int i,show=0;
+
+ strcpy(test,"test.dat");
+
+
+  /* reads input parameters */
+  if (argc>1) {
+        for(i=1;i<argc;i++){
+          if (!strcmp(argv[i],"-h")){
+                show_help("rec_hmm");
+                exit(1);
+          }
+          if (!strcmp(argv[i],"-f")){
+                strcpy(word,argv[i+1]);
+          }
+          if (!strcmp(argv[i],"-t")){
+                strcpy(test,argv[i+1]);
+                strcat(test,".dat");
+          }
+          if (!strcmp(argv[i],"-s")){
+                show=1;
+          }
+
+        }
+  }
+  else{
+
+       show_help("rec_hmm");
+       exit(1);
+  }
+
+  return(show);
+
+}
+
+
+
+

@@ -1,0 +1,12 @@
+Usage:
+rec_hmm -f word -t rec_vocabulary -p -s -h
+
+-f specifies the word whose hmm will be tested 
+-t specifies the recognition vocabulary to be used (default test.dat)
+-s prints the distances of each word
+-p plots the data
+-h shows this message
+
+example:
+
+ rec_hmm -f robot -t rec_test -s -p

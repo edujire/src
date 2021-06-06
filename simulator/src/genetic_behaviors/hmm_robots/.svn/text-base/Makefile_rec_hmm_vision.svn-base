@@ -1,0 +1,24 @@
+CC = g++ 
+
+LIBS = -lm `pkg-config --libs opencv`
+
+CFLAGS = -g `pkg-config --cflags opencv`
+
+PRG_OBJS= rec_hmm_vision.cpp 
+
+OBJS= rec_hmm_vision.o
+
+rec_hmm_vision: $(OBJS)
+	  $(CC)  -o $@ $(OBJS) $(LIBS)
+
+$(OBJS): $(PRG_OBJS)
+	$(CC) $(CFLAGS) -c $*.cpp 
+
+clean:
+	rm $(OBJS)
+	rm rec_hmm_vision
+	
+	
+	
+	
+	
