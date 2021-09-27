@@ -100,6 +100,9 @@ void parametersCallback(const simulator::Parameters::ConstPtr& paramss)
     params.useRealRobot        = paramss->useRealRobot;
     params.useLidar            = paramss->useLidar;
     params.useSArray           = paramss->useSArray;
+    params.flg_genetics	       = paramss ->flg_genetics;
+    params.individuo	=paramss -> individuo;
+    strcpy(params.file_behavior ,paramss -> file_behavior.c_str());
 
 }
 
@@ -216,11 +219,14 @@ int get_light_values_RealRobot(float *intensity, float *values)
 
     if ( client.call(srv) )
     {
+        printf("Light values:");
         for(int i = 0; i < 8; i++)
+        {
             values[i] = srv.response.values[i];
-
+            printf(" %f",values[i]);
+        }
         sensor = 0;
-
+        printf("\n");
         for(int i = 1; i < 8; i++)
         {
             if( values[i] > values[sensor])
@@ -348,6 +354,26 @@ int quantize_laser(float *observations, int size, float laser_value  )
 
     return iz + de ;
 }
+int quantize_laser_real(float *observations, int size, float laser_value  )
+{
+    /*
+      It quantizes the inputs
+    */
+    int iz,de;
+    int j;
+    float short_obs[size];
+    iz = de = 0;
+
+    for(int i=0;i<size;i++){
+        if(observations[i]>0.15) short_obs[i]=0.15;
+        else short_obs[i]=observations[i];
+        printf("%f ",short_obs[i]);
+    }
+    if (short_obs[4]+short_obs[3]<0.29) iz=2;
+    if (short_obs[2]<0.14) de=1;
+	printf("%d ",iz + de);
+    return iz + de ;
+}
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -464,7 +490,7 @@ int move_RealRobot(float theta,float distance)
     client = n.serviceClient<simulator::simulator_MoveRealRobot>("simulator_move_RealRobot");
     srv.request.theta = theta;
     srv.request.distance = distance;
-
+	printf("inside move real robot \n");
     if (client.call(srv))
     {
         if(srv.response.done)
@@ -521,8 +547,10 @@ int move_robot(float theta,float advance,float lidar_readings[512] )
     check_collision(theta ,advance ,new_simulation,&final_theta,&final_distance);
 
     move_gui(final_theta ,final_distance ,&next,lidar_readings);
-    if(params.useRealRobot)
-        move_RealRobot(theta,advance);
+    printf("Inside move robot \n");
+    if(params.useRealRobot){
+	printf("inside the if to move real robot \n");
+        move_RealRobot(theta,advance);}
     ros::spinOnce();
     return 1;
 }

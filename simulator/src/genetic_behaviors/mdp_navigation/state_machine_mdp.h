@@ -279,10 +279,12 @@ void read_mdps(struct mdp_database *mdp, char *path)
 
 
    /* It opens the mdp file */
-   sprintf(input_file,"%s%s.mdp",path,mdp->objects_file);
+   sprintf(input_file,"%s%s",path,mdp->objects_file);
 #ifdef DEBUG
    printf("Reading MDP FILE: %s\n",input_file);
+
 #endif
+   printf("Reading MDP FILE: %s\n",input_file);
    fp2=fopen(input_file,"r");
    if(fp2==0){
         printf("\n File %s does not exists",input_file);

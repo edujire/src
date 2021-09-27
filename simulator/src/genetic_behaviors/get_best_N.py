@@ -2,6 +2,7 @@ import os
 import sys
 import bisect
 import shutil
+import numpy as np
 """
 Get the N best individuals and save them as <behavior>_<num_individual>.dat in desc order
 
@@ -28,21 +29,35 @@ def main():
 		i+=1
 		best_ind=best_ind[-N:]
 		best_fitness=best_fitness[-N:]
+	print(best_ind)
 	best_ind.reverse()
 	best_fitness.reverse()
 	fitness_file.close()
 	count=0
 	fitness_file=open("data/fitness_"+behavior+".dat","w")
 	population_file=open("data/avoid_"+behavior+".dat","w")
+	old_population_file=path+"/avoid_"+behavior+".dat"
 	for ind in best_ind: #copiar archivos a nuevo directorio
 		original_file = path+"/avoid_"+behavior+"_"+str(ind)+".dat"
 		new_file = "data/avoid_"+behavior+"_"+str(count)+".dat"
 		shutil.copy2(original_file,new_file)
-		with open(new_file) as file: #agrega el individuo al archivo de poblacion
-			file.readline()
-			for line in file:
-				population_file.write(line[:-1])
-			print("Done")
+		#escribe diferente de acuerdo al behavior
+		# if behavior=="fsm":
+		# 	with open(new_file) as file: #agrega el individuo al archivo de poblacion
+		# 		file.readline()
+		# 		for line in file:
+		# 			population_file.write(line[:-1])
+		# else:
+		# 	with open(old_population_file) as file:
+		# 		for i, line in enumerate(file):
+  #       				if i == ind:
+		# 				print("inside if ind = "+str(ind))
+  #       					population_file.write(line[:-1])
+  		with open(new_file) as file: #agrega el individuo al archivo de poblacion
+				file.readline()
+				for line in file:
+					population_file.write(line[:-1])
+		print("Done")
 		population_file.write("\n")	 
 		fitness_file.write(str(best_fitness[count])+"\n")
 		count += 1

@@ -20,6 +20,9 @@ typedef struct parameters_
 	bool useRealRobot;
 	bool useLidar;
 	bool useSArray;
+	bool flg_genetics;
+	int individuo;
+	char file_behavior[80];
 } parameters;
 
 typedef struct next_position_

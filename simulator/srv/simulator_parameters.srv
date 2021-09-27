@@ -17,3 +17,6 @@ float32 light_x
 float32 light_y
 int32 behavior
 int32 steps
+bool flg_genetics
+int32 individuo
+string file_behavior

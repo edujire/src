@@ -18,3 +18,6 @@ int32 steps
 bool useRealRobot
 bool useLidar
 bool useSArray
+bool flg_genetics
+int32 individuo
+string file_behavior

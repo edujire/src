@@ -22,10 +22,15 @@ import tkMessageBox
 import os
 import numpy as np
 import subprocess
+from shutil import copyfile
 
 File_Results= rospkg.RosPack().get_path('simulator')+"/src/genetic_behaviors/data/output.raw"
+genetics_data_path = rospkg.RosPack().get_path('simulator')+"/src/genetic_behaviors/data/"
+object_path = "/".join((rospkg.RosPack().get_path('simulator').split("/")[:-2]))+"/devel/lib/simulator/"
+NUM_TEST_GA = 6 #number of test per GA
+BACK_SENSOR = True
+positions_file =genetics_data_path + "genetic_positions.dat"
 
- 
 class MobileRobotSimulator(threading.Thread):
 	
 	def __init__(self):
@@ -103,12 +108,21 @@ class MobileRobotSimulator(threading.Thread):
 		self.sensors_value = [None] * 512 
 
 		#Genetics	
-		self.is_Genetic = False 
-
+		self.is_Genetic = False
+		self.flg_genetic = False
+		self.flgOnce = True
+		self.ind_actual = 0
 		self.start()
+		#self training
+		self.start_positions=[]
+		self.end_positions=[]
+		self.start_angles=[]
+		self.num_test_ga = NUM_TEST_GA
+		self.star = False
 
 
 	def kill(self):  # When press (x) window
+		print("inside kill")
 		self.stopped = True
 		self.varTurtleBot.set(0)
 		self.startFlag=False
@@ -210,9 +224,23 @@ class MobileRobotSimulator(threading.Thread):
 				parameters.append( True )
 			else:
 				parameters.append( False )
-
+		try:
+			parameters.append(int(self.steps_aux))
+		except ValueError:
+			parameters.append(1)
+		try:
+			parameters.append(self.flg_genetic)
+		except ValueError:
+			parameters.append(False)
+		try:
+			parameters.append(int(self.entryIndividuals.get()))
+		except ValueError:
+			parameters.append(0)
+		try:
+			parameters.append(self.entryFileBehaviors.get())
+		except ValueError:
+			parameters.append(" ")
 		return parameters
-
 	
 
 ##########################################
@@ -529,11 +557,23 @@ class MobileRobotSimulator(threading.Thread):
 			
 		else:
 			#calculate fitness
-			self.calculateFitness(File_Results)
-			self.denable('normal')
+			if self.startFlag:
+				self.calculateFitness(File_Results)
+				if self.flg_genetic:
+					self.partial_evaluation += float(self.fitness.get())
+					if self.star == False:
+						self.star=True
+					else:
+						self.star=False
+			else:
+				self.star=True
+  			self.denable('normal')
 			self.startFlag=False
 			self.entrySteps.delete ( 0, END )
 			self.entrySteps.insert ( 0, str(self.steps_aux)  )
+			if not self.varTurtleBot.get() and self.flg_genetic and self.star:
+				self.star=False
+				self.buttonStartGenetics.invoke()
 
 
 	def rewindF(self): # When  the "Last simulation" button is pressed
@@ -642,7 +682,8 @@ class MobileRobotSimulator(threading.Thread):
 
 	      xx=[]
 	      yy=[]
-
+	      ii=[]
+	      epsilon=0.000001
 
 	      for line in file_results:
 	      	words = line.split()
@@ -652,58 +693,70 @@ class MobileRobotSimulator(threading.Thread):
 	      			xo = float(words[2])
 	      			yo = float(words[3])
 	      			zo = float(words[4])
-	      		elif words[1] == "robot":
-	      			x= float(words[3])
-	      			xx.append(x)
-	      			y= float(words[4])
-	      			yy.append(y)
-	      			tetha= float(words[5])
-	      			difx = (x-previous_x)	
-	      			dify = (y-previous_y)
-	      			mag = math.sqrt(pow(difx,2)+pow(dify,2))	
-	      			if mag < THRESHOLD_MOVEMENT:
-	      				num_stops=num_stops + 1
-	      			previous_x=x
-	      			previous_y=y
-	      		elif words[1] == "destination":
-	      			xd= float(words[2])
-	      			yd= float(words[3])
-	      		elif words[1] == "distance":
-	      			distance= float(words[2])
+	      		# elif words[1] == "robot":
+	      		# 	x= float(words[3])
+	      		# 	xx.append(x)
+	      		# 	y= float(words[4])
+	      		# 	yy.append(y)
+	      		# 	tetha= float(words[5])
+	      		# 	difx = (x-previous_x)	
+	      		# 	dify = (y-previous_y)
+	      		# 	mag = math.sqrt(pow(difx,2)+pow(dify,2))	
+	      		# 	if mag < THRESHOLD_MOVEMENT:
+	      		# 		num_stops=num_stops + 1
+	      		# 	previous_x=x
+	      		# 	previous_y=y
+	      		# elif words[1] == "destination":
+	      		# 	xd= float(words[2])
+	      		# 	yd= float(words[3])
+	      		# elif words[1] == "distance":
+	      		# 	distance= float(words[2])
 	      		elif words[1] == "num_steps":
 	      			num_steps= float(words[2])-1
-	      		elif words[1] == "movement":
-	      			angle= float(words[2])
-	      			advance= float(words[3])
-	      			if(advance < -threshold_noise):
-	      				num_backwards=num_backwards + 1
-	      			if(abs(angle) >= threshold_angle and abs(previous_angle) >= threshold_angle):
-	      				num_turns=num_turns + 1
-	      			if(advance >= threshold_noise and previous_advance >= threshold_noise):
-	      				num_advance=num_advance + 1
+	      		# elif words[1] == "movement":
+	      		# 	angle= float(words[2])
+	      		# 	advance= float(words[3])
+	      		# 	if(advance < -threshold_noise):
+	      		# 		num_backwards=num_backwards + 1
+	      		# 	if(abs(angle) >= threshold_angle and abs(previous_angle) >= threshold_angle):
+	      		# 		num_turns=num_turns + 1
+	      		# 	if(advance >= threshold_noise and previous_advance >= threshold_noise):
+	      		# 		num_advance=num_advance + 1
 
-	      			previous_angle = angle
-	      			previous_advance = advance		
-	      sdx = np.std(xx)
-	      sdy = np.std(yy)
-	      sd = sdy + sdx
+	      		# 	previous_angle = angle
+	      		# 	previous_advance = advance
+	      		# REAL FITNESS
+	      		elif words[1] == "intensity":
+	      			intensity = float(words[2])	
+	      			ii.append(intensity)	
+	      # sdx = np.std(xx)
+	      # sdy = np.std(yy)
+	      # sd = sdy + sdx
 	      #print 'std ', str(sd)
+	      #REAL FITNESS
 	      try:
 	      	a=xo
-	      except NameError:#evita que muera con robot real
+	      except NameError:#evita que muera con robot real al presionar stop
 	      	xo=0
 	      	x=.5
 	      	yo=0
 	      	y=.5
 	      	xd=1
 	      	yd=1
-
+	      	ii =[0.0,0.0]
+	      sd = np.std(1/(np.array(ii)+0.000006))
 
 	          #print 'final position x ',x, ' y ',y,' angle ',tetha
-	      dif_o= math.sqrt( math.pow( (xo -x),2)+math.pow( (yo -y),2))
-	      dif_d= math.sqrt(math.pow( (xd -x),2)+math.pow( (yd -y),2))
-	      dif_o_d= math.sqrt(math.pow( (xd -xo),2)+math.pow( (yd -yo),2))
-	      num_steps=1
+	      # dif_o= math.sqrt( math.pow( (xo -x),2)+math.pow( (yo -y),2))
+	      # dif_d= math.sqrt(math.pow( (xd -x),2)+math.pow( (yd -y),2))
+	      # dif_o_d= math.sqrt(math.pow( (xd -xo),2)+math.pow( (yd -yo),2))
+	      # num_steps=1
+	      #REAL FITNESS
+	      print(len(ii))
+	      if ii[-1]>27: #llego al destino
+	      	ii[-1]=27
+	      dif_o = 1/(ii[0]+epsilon)-1/(ii[-1]+0.000006)
+	      dif_d = 1/((ii[-1]+epsilon) -1/30)
 
 	      #QUITE PARTE DIJKSTRA
 	      #command = "../Dijkstra/Dijkstra -x " + str(x) + " -y " + str(y) + " -v " + str(xd) + " -z " + str(yd) + " -p " + PATH + " -e " + File_Name + " > " + PATH + "rslt_" + BEHAVIOR + ".dat"
@@ -719,7 +772,8 @@ class MobileRobotSimulator(threading.Thread):
 		#	distance_Dijkstra = 0
 	      #dif_d = dif_d + distance_Dijkstra
 
-	      evaluation = Ct.K1*abs((number_steps_total - num_steps + 1)*dif_o) + (Ct.K2*abs(number_steps_total - num_steps + 1))/dif_d + Ct.K3*abs(dif_o_d/num_steps) + Ct.K4*(number_steps_total - num_steps+1)/num_backwards + Ct.K8*sd
+	      # evaluation = Ct.K1*abs((number_steps_total - num_steps + 1)*dif_o) + (Ct.K2*abs(number_steps_total - num_steps + 1))/dif_d + Ct.K3*abs(dif_o_d/num_steps) + Ct.K4*(number_steps_total - num_steps+1)/num_backwards + Ct.K8*sd
+	      evaluation = Ct.K1*abs((number_steps_total - num_steps + 1)*dif_o) + (Ct.K2*abs(number_steps_total - num_steps + 1))/dif_d + Ct.K8*sd
 	      print("total_steps: ",number_steps_total," num_steps: ",num_steps)
 	      file_results.close()
 
@@ -767,6 +821,7 @@ class MobileRobotSimulator(threading.Thread):
 			self.entrySteps.insert ( 0, str(self.steps_aux)  )
 
 		if self.steps_ == self.steps_aux:
+			self.star = not self.star
 			self.s_t_simulation(False)
 		#elif( ( float(self.entryPoseX.get()) -self.light_x )**2 + (  float(self.entryPoseY.get())  - self.light_y )**2) < .05**2:
 			#self.s_t_simulation(False)
@@ -919,9 +974,10 @@ class MobileRobotSimulator(threading.Thread):
 				self.w.delete(i)
 			self.clear_topological_map() # To clear topological map
 			self.steps_ = 0 ;
-			self.steps_aux = int(self.entrySteps.get()) ;
 			self.entrySteps.delete ( 0, END )
 			self.entrySteps.insert ( 0, str(100)  )
+			self.steps_aux = int(self.entrySteps.get()) ;
+
 			
 			for trace in self.trace_route :
 				self.w.delete(trace)
@@ -1105,7 +1161,9 @@ class MobileRobotSimulator(threading.Thread):
 		f = self.robot_theta + float(self.entryOrigin.get())
 
 		step = float(self.entryRange.get()) / ( float(self.entryNumSensors.get()) - 1 )
-
+		if BACK_SENSOR:
+			step = float(self.entryRange.get()) / ( float(self.entryNumSensors.get()) - 2 )		#dont count back sensor
+				
 		for k in range(0,int(self.entryNumSensors.get())):
 			for i in range(0,j):
 				for m in range(0, len(self.polygons[self.posible_collision[i]] )-1 ):
@@ -1117,6 +1175,9 @@ class MobileRobotSimulator(threading.Thread):
 						if self.sensors_value[k] > aux*self.mapX/ self.canvasX:
 							self.sensors_value[k] = aux*self.mapX	/ self.canvasX		
 			f = f + step
+			if BACK_SENSOR and k==int(self.entryNumSensors.get())-2: #last sensor
+				f = self.robot_theta + np.pi
+
 
 	def ccw(self,A,B,C):
 		return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
@@ -1310,7 +1371,8 @@ class MobileRobotSimulator(threading.Thread):
 		y = ry
 		f = angle + originSensor
 		step = float( float( rangeSensor ) / float( numSensor - 1 ) )
-
+		if BACK_SENSOR:
+			step = float( float( rangeSensor ) / float( numSensor - 2 ) )	
 		for i in self.lasers:
 			self.w.delete(i)
 		self.lasers = []
@@ -1323,6 +1385,8 @@ class MobileRobotSimulator(threading.Thread):
 
 				self.lasers.append(self.w.create_oval(q-1 ,w-1,q+1 ,w+1 ,fill = color, outline =color  ) )
 			f = f + step
+			if i==numSensor-2:
+				f=angle + np.pi
 		
 	def delete_robot(self):
 
@@ -1451,6 +1515,178 @@ class MobileRobotSimulator(threading.Thread):
 
 		self.trace_route.append(self.w.create_line(init_robotX ,init_robotY ,xf,yf,dash=(4, 4),   fill="#AB1111"))
 	
+	def get_behavior(self):
+
+		if self.entryBehavior.get()=="11":
+			print("FSM Behavior")
+			behavior="fsm"
+		elif self.entryBehavior.get()=="12":
+			print("FSM Behavior")
+			behavior="fsm_st"
+		elif self.entryBehavior.get()=="13": 
+			print("HMM Behavior")
+			behavior="hmm"
+		elif self.entryBehavior.get()=="14": 
+			print("MDP Behavior")
+			behavior="mdp"
+		else: 
+			print("Not matching Behavior")
+			behavior = ""
+		return behavior
+
+	def load_gen_actual(self):
+		behavior=self.get_behavior()
+		file_num_generation =genetics_data_path+"num_generations_"+behavior+".dat"
+		try:
+			with open(file_num_generation,"r") as file:
+					return int(file.readline())
+		except IOError:
+			return 0 
+
+
+
+	def save_fitness_file(self):
+		
+		behavior=self.get_behavior()
+		file_fitness =genetics_data_path+"fitness_"+behavior+".dat"
+		file_fitness_best =genetics_data_path+"fitness_best_"+behavior+".dat"
+		file_fitness_worst =genetics_data_path+"fitness_worst_"+behavior+".dat"
+		file_fitness_avg =genetics_data_path+"fitness_avg_"+behavior+".dat"
+		file_num_generation =genetics_data_path+"num_generations_"+behavior+".dat"
+		best_fitness_gen= -1.0
+		worst_fitness_gen = 100000
+		best_ind = 0
+		ind=0
+		worst_ind = 0
+		print("saving fitness data in "+file_fitness)
+		with open(file_fitness,"w") as file:
+			for fitness in self.fitness_gen:
+				file.write(str(fitness)+"\n")
+				if fitness>=best_fitness_gen:
+					best_fitness_gen = fitness
+					best_ind = ind
+				if fitness<=worst_fitness_gen:
+					worst_fitness_gen = fitness
+					worst_ind = ind
+		#save best ind of generation
+		copyfile(genetics_data_path+"avoid_"+behavior+"_"+str(best_ind)+".dat",genetics_data_path+"best_"+behavior+"_"+str(self.gen_actual-1)+".dat")
+		copyfile(genetics_data_path+"avoid_"+behavior+"_"+str(worst_ind)+".dat",genetics_data_path+"worst_"+behavior+"_"+str(self.gen_actual-1)+".dat")
+		if self.gen_actual==1:
+			with open(file_fitness_best,"w") as file:
+				file.write(str(best_fitness_gen)+"\n")
+			with open(file_fitness_worst,"w") as file:
+				file.write(str(worst_fitness_gen)+"\n")
+			with open(file_fitness_avg,"w") as file:
+				file.write(str(np.mean(self.fitness_gen))+"\n")
+		else:
+			with open(file_fitness_best,"a") as file:
+				file.write(str(best_fitness_gen)+"\n")
+			with open(file_fitness_worst,"a") as file:
+				file.write(str(worst_fitness_gen)+"\n")
+			with open(file_fitness_avg,"a") as file:
+				file.write(str(np.mean(self.fitness_gen))+"\n")
+		with open(file_num_generation,"w") as file:
+				file.write(str(self.gen_actual)+"\n")
+
+	def read_positions_file(self):
+		with open(positions_file,"r") as pf:
+			self.start_angles=[]
+			self.start_positions=[]
+			self.end_positions=[]
+			self.num_test_ga = int(pf.readline())
+			for i in range(self.num_test_ga):
+				line = pf.readline().split()
+				self.start_angles.append(float(line[0]))
+				self.start_positions.append(float(line[1]))
+				self.start_positions.append(float(line[2]))
+				self.end_positions.append(float(line[3]))
+				self.end_positions.append(float(line[4]))
+
+
+
+
+	def genetic_algorithm(self,start_finish):
+		#TODO cargar archivos
+		if start_finish: #start new genetic step 
+			self.buttonRepeat.configure(state="normal")
+			if self.flgOnce:
+				self.flg_genetic = True
+				self.individuals = int(self.entryIndividuals.get())
+				self.generations = int(self.entryGenerations.get())
+				self.gen_actual=self.load_gen_actual()
+				self.flgOnce=False 
+				self.test_actual=0
+				self.ind_actual=0
+				self.fitness_gen = []
+				self.partial_evaluation = 0.0
+				self.entryGenerations.delete ( 0, END )
+				self.entryGenerations.insert ( 0, str(self.gen_actual) )
+				self.entryIndividuals.delete ( 0, END )
+				self.entryIndividuals.insert ( 0, str(self.ind_actual) )
+				self.read_positions_file()
+			if self.gen0.get(): #starn new generation from data
+				self.ind_actual = 0
+				self.gen_actual = 0
+				self.test_actual = 0
+				self.fitness_gen = []
+				self.entryGenerations.delete ( 0, END )
+				self.entryGenerations.insert ( 0, str(self.gen_actual) )
+				self.entryIndividuals.delete ( 0, END )
+				self.entryIndividuals.insert ( 0, str(self.ind_actual) )
+				self.partial_evaluation = 0.0
+				self.s_t_simulation(True)
+				self.gen0.set(0)
+
+				# file_fitness = open(genetics_data_path+"fitness"+behavior)
+			else:
+				self.test_actual += 1 
+				if self.test_actual == NUM_TEST_GA: #pasa a un nuevo individuo
+					self.test_actual = 0
+					self.fitness_gen.append(self.partial_evaluation/NUM_TEST_GA)
+					self.partial_evaluation = 0
+					self.ind_actual += 1
+					if self.ind_actual == self.individuals: #termino todos los individuos pasa al GA
+						self.gen_actual += 1
+						self.save_fitness_file()	
+						self.ind_actual = 0
+						self.fitness_gen=[]
+						if self.gen_actual == self.generations:
+							self.flg_genetic = False
+							self.flgOnce = True
+							self.entryGenerations.delete ( 0, END )
+							self.entryGenerations.insert ( 0, str(self.generations) )
+							self.entryIndividuals.delete ( 0, END )
+							self.entryIndividuals.insert ( 0, str(self.individuals) )
+						else:
+							command = object_path + "genetics "+ genetics_data_path + " " + str(self.individuals) + " " + self.get_behavior()
+							status = os.system(command)
+							print(status)
+				if self.flg_genetic: #dont count last generation
+					self.s_t_simulation(True)
+					self.entryGenerations.delete ( 0, END )
+					self.entryGenerations.insert ( 0, str(self.gen_actual) )
+					self.entryIndividuals.delete ( 0, END )
+					self.entryIndividuals.insert ( 0, str(self.ind_actual) )
+			#TEST IN SIMULATOR
+			if not self.varTurtleBot.get():
+				self.entryPoseX.delete(0,END)
+				self.entryPoseY.delete(0,END)
+				if self.robot > 0:
+					self.delete_robot()
+				self.robot_theta = self.start_angles[self.test_actual]
+				self.robotX = self.start_positions[2*self.test_actual]*600
+				self.robotY = (1-self.start_positions[2*self.test_actual+1])*600
+				self.set_light_position(self.end_positions[2*self.test_actual],self.end_positions[2*self.test_actual+1])
+				self.plot_robot()
+			self.entryFileBehaviors.delete(0,END)
+			self.entryFileBehaviors.insert(0,"avoid_"+self.get_behavior()+"_"+str(self.ind_actual)+".dat")
+		else: #method when finish GA execution
+			pass
+			#save partial evaluation
+	def repeat_last_training(self):
+		self.test_actual -= 1
+		self.buttonRepeat.configure(state="disabled") #restore ind to bo train
+		self.partial_evaluation -= float(self.fitness.get()) #delete las fitness value
 
 	def print_grid(self,line_per_m = 10):
 		for i in self.grid :
@@ -1470,6 +1706,7 @@ class MobileRobotSimulator(threading.Thread):
 		except ValueError:
 			self.entryBehavior.delete ( 0, END )
 			self.entryBehavior.insert ( 0, '1' )
+		self.setEntryFileBehaviors(newbehavior-1)
 	
 	def behavioMore(self): #Button behavior >
 		try:
@@ -1479,6 +1716,21 @@ class MobileRobotSimulator(threading.Thread):
 		except ValueError:
 			self.entryBehavior.delete ( 0, END )
 			self.entryBehavior.insert ( 0, '1' )
+		self.setEntryFileBehaviors(newbehavior+1)
+
+	def setEntryFileBehaviors(self,new_behavior):
+		self.entryFileBehaviors.delete(0,END)
+		if new_behavior==11:
+  			self.entryFileBehaviors.insert ( 0, 'state_machine_mem.txt' )
+  		elif new_behavior==12:
+  			self.entryFileBehaviors.insert ( 0, 'state_machine_mem_stochastic.txt' )
+  		elif new_behavior==13:
+  			self.entryFileBehaviors.insert ( 0, 'hmm_destination_avoidance_fsm.prb' )
+  		elif new_behavior==14:
+  			self.entryFileBehaviors.insert ( 0, 'mdp_environment.mdp' )
+  		else:
+  			self.entryFileBehaviors.insert ( 0, ' ' )
+
 	def set_angle(self,foo): #
 		self.robot_theta = float(self.entryAngle.get())
 		self.plot_robot()
@@ -1511,6 +1763,8 @@ class MobileRobotSimulator(threading.Thread):
 		self.entryValue         .configure(state=state)
 		self.buttonLastSimulation.configure(state=state)    
 		self.buttonRunSimulation.configure(state=state)  
+		self.buttonStartGenetics.configure(state=state)
+		self.buttonRepeat.configure(state=state)
 		#self.buttonStop 
 
 	def mapMore(self):
@@ -1666,8 +1920,8 @@ class MobileRobotSimulator(threading.Thread):
 		self.entryLightX = Label(self.rightMenu ,text = "Click Right" ,background = self.backgroundColor ,font = self.lineFont ,justify='center')
 		self.entryLightY = Label(self.rightMenu ,text = "Click Right" ,background = self.backgroundColor ,font = self.lineFont ,justify='center')
 		self.entryStepsExcec = Label(self.rightMenu ,text = "0" ,background = self.backgroundColor ,font = self.lineFont ,justify='center')
-		self.entryFile.insert ( 0, 'random_2' )
-		self.entrySteps.insert( 0, '300' )
+		self.entryFile.insert ( 0, 'real_env' )
+		self.entrySteps.insert( 0, '100' )
 		self.entryBehavior.insert ( 0, '11' )
 
 		self.buttonMapLess = Button(self.rightMenu ,width = 5, foreground = self.buttonFontColor, background = self.buttonColor , font = self.buttonFont ,text = "Zoom Out" ,command = self.mapLess)
@@ -1691,7 +1945,7 @@ class MobileRobotSimulator(threading.Thread):
 
 		self.checkFaster      .deselect()
 		self.checkShowSensors .select()
-		self.checkAddNoise    .deselect()
+		self.checkAddNoise    .select()
 		self.checkLoadObjects    .deselect()
 	
 		# Robot 
@@ -1718,8 +1972,8 @@ class MobileRobotSimulator(threading.Thread):
 		self.entryPoseY     .insert ( 0, '200' )
 		self.entryAngle     .insert ( 0, '0.0' )
 		self.entryAngle.bind('<Return>', self.set_angle)
-		self.entryRadio     .insert ( 0, '0.03' )
-		self.entryAdvance   .insert ( 0, '0.04' )
+		self.entryRadio     .insert ( 0, '0.032' )
+		self.entryAdvance   .insert ( 0, '0.05' )
 		self.entryTurnAngle .insert ( 0, '0.7857' )
 
 		self.labelVelocity = Label(self.rightMenu ,text = "Execution velocity:"        ,background = self.backgroundColor ,font = self.lineFont)
@@ -1739,10 +1993,10 @@ class MobileRobotSimulator(threading.Thread):
 		self.entryRange      = Entry(self.rightMenu, width = 8 ,background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
 		self.entryValue      = Entry(self.rightMenu, width = 8 ,background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
 
-		self.entryNumSensors   .insert ( 0, '16')
-		self.entryOrigin       .insert ( 0, '-2.3561' )
-		self.entryRange        .insert ( 0, '4.7122' )
-		self.entryValue        .insert ( 0, '0.1' )
+		self.entryNumSensors   .insert ( 0, '8')
+		self.entryOrigin       .insert ( 0, '-2.0944' )
+		self.entryRange        .insert ( 0, '4.1888' )
+		self.entryValue        .insert ( 0, '0.15' )
 
 		# buttons
 
@@ -1755,29 +2009,37 @@ class MobileRobotSimulator(threading.Thread):
 
 		self.lableTurtleBot = Label(self.rightMenu, text = "Real robot" ,background = self.backgroundColor ,foreground = self.titlesColor ,font = self.headLineFont)
 		self.varTurtleBot   = IntVar()
-		self.varLidar   = IntVar(value=1)
-		self.varSArray   = IntVar()
+		self.varLidar   = IntVar()
+		self.varSArray   = IntVar(value=1)
 		self.checkTurtleBot = Checkbutton(self.rightMenu ,text = 'Use real robot' ,variable = self.varTurtleBot ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_real_robot )
 		self.checkLidar = Checkbutton(self.rightMenu ,text = 'Use lidar' ,variable = self.varLidar ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_lidar )
 		self.checkSArray = Checkbutton(self.rightMenu ,text = 'Use sensors array' ,variable = self.varSArray ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor, command = self.use_s_array )
 		
 		#Genetics
+		self.gen0 = IntVar()
+		self.gen0.set(1)
 		# Number of generations 
 		self.lableGenetics   = Label(self.rightMenu ,text = "Genetics" ,background = self.backgroundColor ,foreground = self.titlesColor ,font = self.headLineFont)
   		self.label_generations = Label(self.rightMenu,text =  "Num. Generations", background = self.backgroundColor ,font = self.lineFont)
   		self.label_individuals = Label(self.rightMenu,text =  "Num. Individuals", background = self.backgroundColor ,font = self.lineFont)
   		self.label_fitness = Label(self.rightMenu,text =  "Fitness", background = self.backgroundColor ,font = self.lineFont)
+  		self.label_file_behavior = Label(self.rightMenu,text =  "File Behavior", background = self.backgroundColor ,font = self.lineFont)
+  		#self.label_new_gen = Label(self.rightMenu,text =  "New Generation", background = self.backgroundColor ,font = self.lineFont)
   		
-  		self.generations = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
-  		self.individuals = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		self.entryGenerations = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		self.entryIndividuals = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
   		self.fitness = Entry(self.rightMenu, width = 8, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+  		self.new_gen    = Checkbutton(self.rightMenu ,text = 'Generation 0'    ,variable = self.gen0    ,onvalue = 1 ,offvalue = 0 ,background = self.backgroundColor)
+  		self.entryFileBehaviors = Entry(self.rightMenu, width = 29, background = self.entrybackgroudColor ,foreground = self.entryforegroundColor)
+
+
+  		self.buttonStartGenetics = Button(self.rightMenu , text = "Genetic Algorithm", foreground = self.buttonFontColor ,background = self.buttonColor,font = self.buttonFont,command = lambda: self.genetic_algorithm(True) )
+  		self.buttonRepeat = Button(self.rightMenu , text = "Repeat Last Training", foreground = self.buttonFontColor ,background = self.buttonColor,font = self.buttonFont,command = lambda: self.repeat_last_training() )
+
+  		self.entryGenerations.insert ( 0, '20' )
+  		self.entryIndividuals.insert ( 0, '16' )
+  		self.setEntryFileBehaviors(int(self.entryBehavior.get()))
   		
-  		self.buttonStartGenetics = Button(self.rightMenu , text = "Genetic Algorithm", foreground = self.buttonFontColor ,background = self.buttonColor,font = self.buttonFont,command = lambda: self.s_t_simulation(True) )
-
-  		self.generations.insert ( 0, '10' )
-  		self.individuals.insert ( 0, '10' )
-
-  		num_generations = self.generations.get()
 
 		#### Right menu widgets grid			
 
@@ -1905,13 +2167,20 @@ class MobileRobotSimulator(threading.Thread):
 		self.label_generations      .grid(column = 0 ,row = 21  ,sticky = (N, W) ,padx = (5,5))     
 		self.label_individuals      .grid(column = 4 ,row = 21  ,sticky = (N, W) ,padx = (10,5))     
 		self.label_fitness     .grid(column = 4 ,row = 22  ,sticky = (N, W) ,padx = (10,5))     
+		self.label_file_behavior     .grid(column = 0 ,row = 22  ,sticky = (N, W) ,padx = (10,5))     
 		
-		self.generations    .grid(column = 1 ,row = 21  ,sticky = (N, W) ,padx = (10,5))
-		self.individuals   .grid(column = 5 ,row = 21  ,sticky = (N, W) ,padx = 5)
-		self.fitness     .grid(column = 5 ,row = 22  ,sticky = (N, W) ,padx = 5 ) 
+		#self.label_new_gen     .grid(column = 4 ,row = 23  ,sticky = (N, W) ,padx = (10,5))  
 
-		self.buttonStartGenetics.grid(column = 0 ,row = 22 ,rowspan = 2,columnspan = 2, sticky = (N, W+E) ,padx = (10,5))
+		self.entryGenerations    .grid(column = 1 ,row = 21  ,sticky = (N, W) ,padx = (10,5))
+		self.entryIndividuals   .grid(column = 5 ,row = 21  ,sticky = (N, W) ,padx = 5)
+		self.fitness     .grid(column = 5 ,row = 22  ,sticky = (N, W) ,padx = 5 ) 
+		self.new_gen.grid(column = 5,row = 23, sticky =(N,W),padx = 5 )
+		self.entryFileBehaviors   .grid(column = 1 ,row = 22,columnspan=3,  sticky = (N, W) ,padx = 5)
+
+		self.buttonStartGenetics.grid(column = 0 ,row = 23 ,rowspan = 2,columnspan = 2, sticky = (N, W+E) ,padx = (10,5))
+		self.buttonRepeat.grid(column = 0 ,row = 25 ,rowspan = 2,columnspan = 2, sticky = (N, W+E) ,padx = (10,5))
 		
+		self.buttonRepeat.configure(state="disabled")
 	def run(self):	
 		self.gui_init()
 		self.read_map()

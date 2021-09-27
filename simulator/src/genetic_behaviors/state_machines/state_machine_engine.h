@@ -16,7 +16,7 @@
 #define NUM_BITS_INTENSITY 2
 #define NUM_BITS_DEST_ANGLE 3
 #define NUM_MAX_MEMORY 65535 // 2 >> 16
-#define THRESHOLD 23
+#define THRESHOLD 30
 //#define DEBUG 10
     
 typedef struct _memory_state_machine{

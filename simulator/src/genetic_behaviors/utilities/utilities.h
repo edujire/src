@@ -437,7 +437,7 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[0] %f\n",observations[0]);
 #endif
-        jj = 3 - index+1;
+        jj = 3;
         k = 3 + index;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
@@ -455,8 +455,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[1] %f\n",observations.sensors[1]);
 #endif
-        jj = 3 - index+1;
-        k = 3 + index;
+        jj = 3 + index-1;
+        k = 3 + index-1;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -474,8 +474,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[2] %f\n",observations.sensors[2]); 
 #endif
-        jj = 3 - index+2;
-        k = 3 + index+1;
+        jj = 3 + index-1;
+        k = 3;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -492,8 +492,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[3] %f\n",observations.sensors[3]); 
 #endif
-        jj = 3 - index+2;
-        k = 3 + index+1;
+        jj = 3 - index+1;
+        k = 3;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -511,7 +511,7 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
         printf("obs[4] %f\n",observations.sensors[4]); 
 #endif
         jj = 3 ;
-        k = 3 + index;
+        k = 3 - index+1;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -528,8 +528,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[5] %f\n",observations.sensors[5]); 
 #endif
-        jj = 3 ;
-        k = 3 + index;
+        jj = 3 - index +1 ;
+        k = 3 - index + 1;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -546,8 +546,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[6] %f\n",observations.sensors[6]); 
 #endif
-        jj = 3 + index;
-        k = 3 + index;
+        jj = 3 - index +1;
+        k = 3 ;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -564,62 +564,8 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
 #ifdef DEBUG
         printf("obs[7] %f\n",observations.sensors[7]); 
 #endif
-        jj = 3 + index ;
-        k = 3;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[8];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[8] %f\n",observations.sensors[8]);
-#endif
-        jj = 3;
-        k = 3 - index +1;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[9];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[9] %f\n",observations.sensors[9]);
-#endif
-        jj = 3;
-        k = 3 - index +1;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[10];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[10] %f\n",observations.sensors[10]);
-#endif
         jj = 3 - index +1;
-        k = 3 - index +1;
+        k = 3 + index -1;
         mdp->type[jj][k]=0;
 #ifdef DEBUG
         printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
@@ -629,98 +575,6 @@ void ocupancy_grid_mdp(float *observations, int size, int attraction, struct mdp
         printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
 #endif
   }
-
-  obs= observations[11];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[11] %f\n",observations.sensors[11]);
-#endif
-        jj = 3 ;
-        k = 3 - index +1;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[12];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[12] %f\n",observations.sensors[12]);
-#endif
-        jj = 3;
-        k = 3-index+1;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[13];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[13] %f\n",observations.sensors[13]);
-#endif
-        jj = 3 - index +1;
-        k = 3 - index +1;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[14];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[14] %f\n",observations.sensors[14]);
-#endif
-
-        jj = 3 - index +1;
-        k = 3 + index -2;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
-  obs= observations[15];
-  index = get_index_range(obs,r1,r2,r3);
-  if(index != 0){
-#ifdef DEBUG
-        printf("obs[15] %f\n",observations.sensors[15]);
-#endif
-        jj = 3 - index +1;
-        k = 3 + index -2;
-        mdp->type[jj][k]=0;
-#ifdef DEBUG
-        printf("obstacle type[%d][%d] %d\n",jj,k,mdp->type[jj][k]);
-#endif
-        mdp->reward[jj][k]=-1.00000;
-#ifdef DEBUG
-        printf("reward[%d][%d] %f\n",jj,k,mdp->reward[jj][k]);
-#endif
-  }
-
 
 
 
@@ -754,7 +608,7 @@ void write_mdps(struct mdp_database mdp, char *path)
 
 
    /* It opens the mdp file */
-   sprintf(input_file,"%s%s_grid.mdp",path,mdp.objects_file);
+   sprintf(input_file,"%smdp_environment_grid.mdp",path);
 #ifdef DEBUG
    printf("writting MDP FILE: %s\n",input_file);
 #endif

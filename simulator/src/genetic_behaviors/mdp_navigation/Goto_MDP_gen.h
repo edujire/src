@@ -14,8 +14,7 @@
 ********************************************************************************/
 
 #define PATH "../data/"
-#define CENTROID_FILE "vq_images_laser"
-#define NUM_POLICY 4
+#define NUM_POLICY 7
 
 
 int Num_backward=0;
@@ -51,8 +50,7 @@ int go_to_mdp_gen(int num_obs, int dest, int intensity,float *observations, move
  char action;
  static char previous_action='N';
  char path[250];
-
- sprintf(path,"%smdp_navigation/",root_path);
+ sprintf(path,"%sdata/",root_path);
  if(flg==0){
 
  	/* It reads the mdp */
@@ -119,7 +117,7 @@ return result;
 
 }
 // it moves the robot from the origen to the destination using MDP state machines
-int go_to_mdp_gen_stalin(int num_obs, int dest, int intensity, float *observations, movement *movements,char *root_path,float largest_value,int num_sensors,float Mag_Advance, float max_angle, float intensity_value)
+int go_to_mdp_gen_stalin(int num_obs, int dest, int intensity, float *observations, movement *movements,char *root_path,float largest_value,int num_sensors,float Mag_Advance, float max_angle, float intensity_value, char *object_file)
 {
 
  static int flg=0;
@@ -141,22 +139,24 @@ int go_to_mdp_gen_stalin(int num_obs, int dest, int intensity, float *observatio
  static char mdp_grid_file[250];
  int result = 0;
  char path[200];
-
-  sprintf(path,"%smdp_navigation/",root_path);
- if(flg==0){
+  sprintf(path,"%sdata/",root_path);
+ if(num_obs==1){
 
     /* It reads the mdp */
-    strcpy(mdp.objects_file,"mdp_environment");
-    printf("MDPfile %s\n", mdp.objects_file);
+    strcpy(mdp.objects_file,object_file);
+    // printf("MDPfile %s\n", mdp.objects_file);
     read_mdps(&mdp,path);
 
     flg_omnidirectional=0;
+    sprintf(mdp_grid_file,"%smdp_environment_grid.mdp",path);
+    sprintf(policy_file,"%spolicy.txt",path);
     flg=1;
  }
 
 // It generates the mdp policy
- //printf("MDP num_obs %d\n",num_obs);
+ printf("MDP num_obs %d\n",num_obs);
  if((num_obs == 1) || (Time == NUM_POLICY) || (last_action == 'X')){
+    printf("\n inside if path = %s \n ",path);
 
 
                 // It generates the ocupancy grid for the mdp, function in file ~/robotics/utilities/utilities.h
@@ -177,8 +177,7 @@ int go_to_mdp_gen_stalin(int num_obs, int dest, int intensity, float *observatio
         */
 
         //mdpnav_function ../mdp_stalin/mdpnav_function.h
-        sprintf(mdp_grid_file,"%smdp_environment_grid.mdp",path);
-        sprintf(policy_file,"%spolicy.txt",path);
+        
         mdpnav_function(mdp, mdp_grid_file, policy_file);
 
                 // it reads the policy table
@@ -209,7 +208,7 @@ if (intensity_value > THRESHOLD){
             result = 1;
                 }
 else 
- // /home/biorobotica/robotics/utilities/utilities.h //
+ // /home/biorobotica/robotics/genetic_behaviors/mdp_navigation/state_machine_mdp.h //
  *movements = mdp_output(action, Mag_Advance,max_angle);
  
  previous_action=action;

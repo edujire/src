@@ -4,7 +4,7 @@
 	<node name="laser_node" pkg="simulator" type="laser_node" output="screen" />	
 	<node name="light_server" pkg="simulator" type="light_server"/>
 	<node name="light_node" pkg="simulator" type="light_node" output="screen" />
-	<node name="motion_planner_node" pkg="simulator" type="motion_planner_node" output="screen" />	
+	<node name="motion_planner_node" pkg="simulator" type="motion_planner_node" output="screen" respawn="true" />	
 	<node name="find_obj_node" pkg="simulator" type="find_obj_node" output="screen" />	
 	<node name="manipulator_node" pkg="simulator" type="manipulator_node" output="screen" />	
 	

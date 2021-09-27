@@ -264,3 +264,7 @@ add_dependencies(find_obj_node simulator_generate_messages_cpp)
 add_executable(manipulator_node src/simulator_physics/manipulator_node.cpp)
 target_link_libraries(manipulator_node ${catkin_LIBRARIES})
 add_dependencies(manipulator_node simulator_generate_messages_cpp)
+
+add_executable(genetics src/genetic_behaviors/genetics/genetics.cpp)
+target_link_libraries(manipulator_node ${catkin_LIBRARIES})
+add_dependencies(genetics simulator_generate_messages_cpp)

@@ -120,10 +120,13 @@ def ros():
 		msg_params.light_y = parameters[13]
 		msg_params.run = parameters[14]
 		msg_params.behavior = parameters[15]
-		msg_params.steps = parameters[16]
+		msg_params.steps = parameters[19]
 		msg_params.useRealRobot = parameters[16]
 		msg_params.useLidar = parameters[17]
 		msg_params.useSArray = parameters[18]
+		msg_params.flg_genetics = parameters[20]
+		msg_params.individuo = parameters[21]
+		msg_params.file_behavior = parameters[22]
 
 		pub_params.publish(msg_params)
 
