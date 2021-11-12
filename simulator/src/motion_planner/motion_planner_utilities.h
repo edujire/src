@@ -547,9 +547,7 @@ int move_robot(float theta,float advance,float lidar_readings[512] )
     check_collision(theta ,advance ,new_simulation,&final_theta,&final_distance);
 
     move_gui(final_theta ,final_distance ,&next,lidar_readings);
-    printf("Inside move robot \n");
     if(params.useRealRobot){
-	printf("inside the if to move real robot \n");
         move_RealRobot(theta,advance);}
     ros::spinOnce();
     return 1;

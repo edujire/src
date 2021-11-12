@@ -434,7 +434,7 @@ void read_hmms(struct hmm_database *hmm, int flg_read,char *path, int flg_inputs
 
 
    /* It opens the hmm file */
-   sprintf(input_file,"%s%s.prb",path,hmm->objects_file);
+   sprintf(input_file,"%s%s",path,hmm->objects_file);
    //printf("Reading HMM FILE: %s\n",input_file);
    fp2=fopen(input_file,"r");
    if(fp2==0){

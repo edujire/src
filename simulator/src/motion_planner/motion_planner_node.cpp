@@ -117,7 +117,7 @@ int main(int argc ,char **argv)
     strcpy(path,"./src/simulator/src/data/");
     //HMM
     char file_hmm[250];
-    strcpy(file_hmm,"hmm_robots/hmm_destination_avoidance_fsm");
+    strcpy(file_hmm,"hmm_robots/hmm_destination_avoidance_fsm.prb");
     //MDP
     float angle_mdp;
     int num_obs = 1;
@@ -477,7 +477,7 @@ int main(int argc ,char **argv)
                est_sig = 0; //flg old?
                flagOnce = 0;
             }
-            if (params.flg_genetics){sprintf(file_hmm,"%sdata/avoid_hmm_%i.dat",genetic_path,params.individuo);}
+            if (params.flg_genetics){sprintf(file_hmm,"data/avoid_hmm_%i.dat",params.individuo);}
             if(params.useRealRobot){
                 if(inner_state == 0){
                     flg_result = state_machine_destination_hmm(q_light_gen, q_intensity, q_inputs_gen, &est_sig,
@@ -671,8 +671,9 @@ int main(int argc ,char **argv)
                     movements.advance = .03;
                 break;
             }
-            if(cta_steps == params.steps-1){
+            if(cta_steps == params.steps-2){
                 flg_stop=1;
+                printf("stop \n");
             }
             if(flagRun==1 && flg_stop ==1){
                 fprintf(fpw,"( distance %f )\n",sqrt((params.robot_x-params.light_x)*(params.robot_x-params.light_x)+(params.robot_y-params.light_y)*(params.robot_y-params.light_y)));
@@ -688,12 +689,12 @@ int main(int argc ,char **argv)
                 printf("RUN: %i",NUM_RUN);
             }
             ros::spinOnce();
-            printf("\n\n             MOTION PLANNER \n________________________________\n");
-            printf("Light: x = %f  y = %f \n",params.light_x,params.light_y);
-            printf("Robot: x = %f  y = %f \n",params.robot_x,params.robot_y);
-            printf("Step: %d of %i \n",cta_steps++,params.steps);
-            printf("Movement: twist: %f advance: %f \n" ,movements.twist ,movements.advance );
-
+            // printf("\n\n             MOTION PLANNER \n________________________________\n");
+            // printf("Light: x = %f  y = %f \n",params.light_x,params.light_y);
+            // printf("Robot: x = %f  y = %f \n",params.robot_x,params.robot_y);
+            // printf("Step: %d of %i \n",cta_steps,params.steps);
+            // printf("Movement: twist: %f advance: %f \n" ,movements.twist ,movements.advance );
+            cta_steps++;
             flg_noise = params.noise;
             if(params.useRealRobot){
                 if (movements.twist < 0) movements.twist = movements.twist + 0.096;
@@ -718,5 +719,5 @@ int main(int argc ,char **argv)
         
         r.sleep();
     }
-    //fclose(fpw);
+    fclose(fpw);
 }

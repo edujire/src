@@ -488,10 +488,10 @@ void  transform_pts_hmm(cromosome_binary *old_pop,cromosome_potential *new_pop, 
   for(n=1; n <= num_states; n++){
           new_pop[k].variables[ini+n]=new_pop[k].variables[ini+n]/sum;
     sum_prb= sum_prb + new_pop[k].variables[ini+n];
-          printf(" pop. %d pi[%d] %f\n",k,n,new_pop[k].variables[ini+n]);
+          //printf(" pop. %d pi[%d] %f\n",k,n,new_pop[k].variables[ini+n]);
     
   }
-  printf(" sum. prb Pi %f\n\n",sum_prb);
+  //printf(" sum. prb Pi %f\n\n",sum_prb);
 
   // it gets the components of A
         for(nn=1; nn <= num_states; nn++){
@@ -526,10 +526,10 @@ void  transform_pts_hmm(cromosome_binary *old_pop,cromosome_potential *new_pop, 
          for(n=1; n <= num_states; n++){
                 new_pop[k].variables[ini+n]=new_pop[k].variables[ini+n]/sum;
                 sum_prb= sum_prb + new_pop[k].variables[ini+n];
-                printf(" pop. %d a[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
+                //printf(" pop. %d a[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
 
          }
-         printf(" sum. prb A %d %f\n\n",nn,sum_prb);
+         //printf(" sum. prb A %d %f\n\n",nn,sum_prb);
 
   }
 
@@ -567,10 +567,10 @@ void  transform_pts_hmm(cromosome_binary *old_pop,cromosome_potential *new_pop, 
          for(n=1; n <= num_symbols; n++){
                 new_pop[k].variables[ini+n]=new_pop[k].variables[ini+n]/sum;
                 sum_prb= sum_prb + new_pop[k].variables[ini+n];
-                printf(" pop. %d b[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
+                //printf(" pop. %d b[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
 
          }
-         printf(" sum. prb B %d %f\n\n",nn,sum_prb);
+         //printf(" sum. prb B %d %f\n\n",nn,sum_prb);
 
         }
 
@@ -606,15 +606,15 @@ void  transform_pts_hmm(cromosome_binary *old_pop,cromosome_potential *new_pop, 
          for(n=1; n <= num_outputs; n++){
                 new_pop[k].variables[ini+n]=new_pop[k].variables[ini+n]/sum;
                 sum_prb= sum_prb + new_pop[k].variables[ini+n];
-                printf(" pop. %d c[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
+                //printf(" pop. %d c[%d][%d] %f\n",k,nn,n,new_pop[k].variables[ini+n]);
 
          }
-         printf(" sum. prb C %d %f\n\n",nn,sum_prb);
+         //printf(" sum. prb C %d %f\n\n",nn,sum_prb);
 
         }
 
         printf("Individual %d ",k);
-    printf("Num. variables %d num.var used %d\n",num_variables,m-3);
+    //printf("Num. variables %d num.var used %d\n",num_variables,m-3);
 
   }
 
@@ -1083,10 +1083,7 @@ int main(int argc,char *args[]){ // args: path, num_individuals, behavior
     old_pop[i].bits =  (int *) alloc_int(num_bits_individuals);
     new_pop[i].bits =  (int *) alloc_int(num_bits_individuals);
   }
-  if(strcmp(behavior,"fsm")==0) transform_state_machine(path, num_individuals,num_bits_individuals);
-  else if(strcmp(behavior,"hmm")==0) transform_state_machine_hmm(path, num_individuals);
-  else if(strcmp(behavior,"mdp")==0) transform_mdp(path, num_individuals);
-  else printf("Behavior not implemented");
+
   //printf("Read the file with population %s \n",file_name);
   read_pop_binary(path,behavior,old_pop,num_individuals,num_bits_individuals);
    
@@ -1151,13 +1148,12 @@ int main(int argc,char *args[]){ // args: path, num_individuals, behavior
     fprintf(fp,"%s_%d.dat %f\n",file_name_old,i,old_pop[i].fitness);
  }
 
- fclose(fp);
-  if(strcmp(behavior,"fsm")==0) transform_state_machine(path, num_individuals,num_bits_individuals);
-  else if(strcmp(behavior,"hmm")==0) transform_state_machine_hmm(path, num_individuals);
-  else if(strcmp(behavior,"mdp")==0) transform_mdp(path, num_individuals);
-  else printf("Behavior not implemented");
- 
-
+ fclose(fp); 
+        printf("trasforming\n");
+        if(strcmp(behavior,"fsm")==0) transform_state_machine(path, num_individuals,num_bits_individuals);
+        else if(strcmp(behavior,"hmm")==0) transform_state_machine_hmm(path, num_individuals);
+        else if(strcmp(behavior,"mdp")==0) transform_mdp(path, num_individuals);
+        else printf("Behavior not implemented");
 }  
 
 

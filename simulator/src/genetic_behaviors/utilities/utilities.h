@@ -246,15 +246,12 @@ int quantize_inputs(float *observations, int size_vectors, int size_quantizer, c
    
    for(i=0;i<size_vectors;i++){
 	n_observations[i]=observations[i]*scale;
-        printf("observations[%d] %f\n",i,observations[i]);
-	
    }
 
 
    // function in ../vq/vq.h
    value = get_closest_centroid(centroids,n_observations,num_centroids,size_vectors,&dst,ofst);
    //printf(" index %d distance %f\n",value,dst);
-   printf("closest centroid: %d \n",value);
  
 
  return(value);

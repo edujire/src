@@ -42,21 +42,25 @@ def main():
 		new_file = "data/avoid_"+behavior+"_"+str(count)+".dat"
 		shutil.copy2(original_file,new_file)
 		#escribe diferente de acuerdo al behavior
-		# if behavior=="fsm":
-		# 	with open(new_file) as file: #agrega el individuo al archivo de poblacion
-		# 		file.readline()
-		# 		for line in file:
-		# 			population_file.write(line[:-1])
+		if behavior=="fsm":
+			with open(new_file) as file: #agrega el individuo al archivo de poblacion
+				file.readline()
+				for line in file:
+					population_file.write(line[:-1])
+		else:
+			with open(old_population_file) as file:
+				for i, line in enumerate(file):
+        				if i == ind:
+						print("inside if ind = "+str(ind))
+        					population_file.write(line[:-1])
+				
 		# else:
 		# 	with open(old_population_file) as file:
 		# 		for i, line in enumerate(file):
   #       				if i == ind:
 		# 				print("inside if ind = "+str(ind))
   #       					population_file.write(line[:-1])
-  		with open(new_file) as file: #agrega el individuo al archivo de poblacion
-				file.readline()
-				for line in file:
-					population_file.write(line[:-1])
+
 		print("Done")
 		population_file.write("\n")	 
 		fitness_file.write(str(best_fitness[count])+"\n")

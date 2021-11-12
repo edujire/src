@@ -649,15 +649,15 @@ class MobileRobotSimulator(threading.Thread):
 
 	        def __init__(self):
 
-				self.K0 = 1.0
-				self.K1 = 10.0 * self.K0 #0.1
-				self.K2 = 2.0 * self.K0 #10.0
-				self.K3 = 0.0 #0.0
-				self.K4 = 0.0 #0.1
-				self.K5 = 0.0 #0.1
-				self.K6 = 0.0 #1.0
-				self.K7 = 0.0 #.10
-				self.K8 = 11.0 * self.K0 #.10		
+                        self.K0 = 1.0
+                        self.K1 = 10.0 * self.K0 #0.1
+                        self.K2 = 2.0 * self.K0 #10.0
+                        self.K3 = 0.0 #0.0
+                        self.K4 = 0.0 #0.1
+                        self.K5 = 0.0 #0.1
+                        self.K6 = 0.0 #1.0
+                        self.K7 = 0.0 #.10
+                        self.K8 = 11.0 * self.K0 #.10		
 	      Ct = Cnts()
 	      file_results = open(File_Results, 'r')
 
@@ -684,7 +684,6 @@ class MobileRobotSimulator(threading.Thread):
 	      yy=[]
 	      ii=[]
 	      epsilon=0.000001
-
 	      for line in file_results:
 	      	words = line.split()
 	      	data = words
@@ -692,71 +691,79 @@ class MobileRobotSimulator(threading.Thread):
 	      		if words[1] == "origen":
 	      			xo = float(words[2])
 	      			yo = float(words[3])
-	      			zo = float(words[4])
-	      		# elif words[1] == "robot":
-	      		# 	x= float(words[3])
-	      		# 	xx.append(x)
-	      		# 	y= float(words[4])
-	      		# 	yy.append(y)
-	      		# 	tetha= float(words[5])
-	      		# 	difx = (x-previous_x)	
-	      		# 	dify = (y-previous_y)
-	      		# 	mag = math.sqrt(pow(difx,2)+pow(dify,2))	
-	      		# 	if mag < THRESHOLD_MOVEMENT:
-	      		# 		num_stops=num_stops + 1
-	      		# 	previous_x=x
-	      		# 	previous_y=y
-	      		# elif words[1] == "destination":
-	      		# 	xd= float(words[2])
-	      		# 	yd= float(words[3])
-	      		# elif words[1] == "distance":
-	      		# 	distance= float(words[2])
+	      			zo = float(words[4])			
+	      		elif words[1] == "robot":
+	      			x= float(words[3])
+	      			xx.append(x)
+	      			y= float(words[4])
+	      			yy.append(y)
+	      			tetha= float(words[5])
+	      			difx = (x-previous_x)	
+	      			dify = (y-previous_y)
+	      			mag = math.sqrt(pow(difx,2)+pow(dify,2))	
+	      			if mag < THRESHOLD_MOVEMENT:
+	      				num_stops=num_stops + 1
+	      			previous_x=x
+	      			previous_y=y
+	      		elif words[1] == "destination":
+	      			xd= float(words[2])
+	      			yd= float(words[3])
+	      		elif words[1] == "distance":
+	      			distance= float(words[2])
 	      		elif words[1] == "num_steps":
 	      			num_steps= float(words[2])-1
-	      		# elif words[1] == "movement":
-	      		# 	angle= float(words[2])
-	      		# 	advance= float(words[3])
-	      		# 	if(advance < -threshold_noise):
-	      		# 		num_backwards=num_backwards + 1
-	      		# 	if(abs(angle) >= threshold_angle and abs(previous_angle) >= threshold_angle):
-	      		# 		num_turns=num_turns + 1
-	      		# 	if(advance >= threshold_noise and previous_advance >= threshold_noise):
-	      		# 		num_advance=num_advance + 1
+	      		elif words[1] == "movement":
+	      			angle= float(words[2])
+	      			advance= float(words[3])
+	      			if(advance < -threshold_noise):
+	      				num_backwards=num_backwards + 1
+	      			if(abs(angle) >= threshold_angle and abs(previous_angle) >= threshold_angle):
+	      				num_turns=num_turns + 1
+	      			if(advance >= threshold_noise and previous_advance >= threshold_noise):
+	      				num_advance=num_advance + 1
 
-	      		# 	previous_angle = angle
-	      		# 	previous_advance = advance
+	      			previous_angle = angle
+	      			previous_advance = advance
 	      		# REAL FITNESS
 	      		elif words[1] == "intensity":
 	      			intensity = float(words[2])	
 	      			ii.append(intensity)	
-	      # sdx = np.std(xx)
-	      # sdy = np.std(yy)
-	      # sd = sdy + sdx
+	      #FITNESS SIMULATOR
+	      if not self.varTurtleBot.get():
+                sdx = np.std(xx)
+                sdy = np.std(yy)
+                sd = sdy + sdx
 	      #print 'std ', str(sd)
 	      #REAL FITNESS
-	      try:
-	      	a=xo
-	      except NameError:#evita que muera con robot real al presionar stop
-	      	xo=0
-	      	x=.5
-	      	yo=0
-	      	y=.5
-	      	xd=1
-	      	yd=1
-	      	ii =[0.0,0.0]
-	      sd = np.std(1/(np.array(ii)+0.000006))
-
-	          #print 'final position x ',x, ' y ',y,' angle ',tetha
-	      # dif_o= math.sqrt( math.pow( (xo -x),2)+math.pow( (yo -y),2))
-	      # dif_d= math.sqrt(math.pow( (xd -x),2)+math.pow( (yd -y),2))
-	      # dif_o_d= math.sqrt(math.pow( (xd -xo),2)+math.pow( (yd -yo),2))
-	      # num_steps=1
+              else:
+                try:
+                        a=xo
+                except NameError:#evita que muera con robot real al presionar stop
+                        xo=0
+                        x=.5
+                        yo=0
+                        y=.5
+                        xd=1
+                        yd=1
+                        ii =[0.0,0.0]
+                sd = np.std(1/(np.array(ii)+0.000006))
+                #print 'final position x ',x, ' y ',y,' angle ',tetha
+	      #FITNESS SIMULATOR
+	      if not self.varTurtleBot.get():
+                dif_o= math.sqrt( math.pow( (xo -x),2)+math.pow( (yo -y),2))
+                dif_d= math.sqrt(math.pow( (xd -x),2)+math.pow( (yd -y),2))
+		if dif_d<0.07:
+			print(dif_d)
+			dif_d=0.07
+                dif_o_d= math.sqrt(math.pow( (xd -xo),2)+math.pow( (yd -yo),2))
+                num_steps=1
 	      #REAL FITNESS
-	      print(len(ii))
-	      if ii[-1]>27: #llego al destino
-	      	ii[-1]=27
-	      dif_o = 1/(ii[0]+epsilon)-1/(ii[-1]+0.000006)
-	      dif_d = 1/((ii[-1]+epsilon) -1/30)
+	      else:
+                print(len(ii))
+                if ii[-1]>27: #llego al destino
+                        ii[-1]=27
+                dif_o = 1/(ii[0]+epsilon)-1/(ii[-1]+0.000006)
+                dif_d = 1/((ii[-1]+epsilon) -1/30)
 
 	      #QUITE PARTE DIJKSTRA
 	      #command = "../Dijkstra/Dijkstra -x " + str(x) + " -y " + str(y) + " -v " + str(xd) + " -z " + str(yd) + " -p " + PATH + " -e " + File_Name + " > " + PATH + "rslt_" + BEHAVIOR + ".dat"
@@ -781,6 +788,7 @@ class MobileRobotSimulator(threading.Thread):
 
 	def calculateFitness(self,File_Results):
 	    	if self.startFlag==True: #simulacion en proceso
+			time.sleep(.1)
 	    		partial_evaluation = self.readResultFile(File_Results,0)
 	    		#print 'Evaluation ',partial_evaluation
 	    		self.fitness.delete(0, END)
@@ -812,7 +820,7 @@ class MobileRobotSimulator(threading.Thread):
 			self.p_giro = 0
 			self.p_distance = 0
 
-		self.steps_= self.steps_+1;
+		self.steps_= self.steps_+1
 		self.entrySteps.delete ( 0, END )
 		 
 		if self.startFlag:
@@ -1610,6 +1618,7 @@ class MobileRobotSimulator(threading.Thread):
 		if start_finish: #start new genetic step 
 			self.buttonRepeat.configure(state="normal")
 			if self.flgOnce:
+				print("flag once")
 				self.flg_genetic = True
 				self.individuals = int(self.entryIndividuals.get())
 				self.generations = int(self.entryGenerations.get())
