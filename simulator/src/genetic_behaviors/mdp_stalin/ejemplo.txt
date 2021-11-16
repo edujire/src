@@ -1,0 +1,9 @@
+
+Compilacion
+make -f Makefile_mdpnav
+
+Ejecucion
+mdpnav -g 1 -e 0.0008 -f problem4.mdp
+
+Resultado
+policy.txt
